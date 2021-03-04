@@ -46,6 +46,21 @@ static bool mdunlink_ao_perFile(const int segno, void *ctx);
 static bool copy_append_only_data_perFile(const int segno, void *ctx);
 static bool truncate_ao_perFile(const int segno, void *ctx);
 
+static File standard_OpenAOSegmentFile(Relation rel, char *filepathname, 
+				  						int64	logicalEof);
+static void standard_TruncateAOSegmentFile(File fd, Relation rel,
+											int32 segFileNum, int64 offset);
+static void standard_mdunlink_ao(RelFileNodeBackend rnode,
+								ForkNumber forkNumber, bool isRedo);
+static void standard_copy_append_only_data(RelFileNode src, RelFileNode dst,
+        									BackendId backendid, char relpersistence);
+
+
+ao_file_unlink_hook_type ao_file_unlink_hook = NULL;
+ao_file_truncate_hook_type ao_file_truncate_hook = NULL;
+ao_file_open_hook_type ao_file_open_hook = NULL;
+ao_file_copy_hook_type ao_file_copy_hook = NULL;
+
 int
 AOSegmentFilePathNameLen(Relation rel)
 {
@@ -144,6 +159,24 @@ OpenAOSegmentFile(Relation rel,
 				  char *filepathname, 
 				  int64	logicalEof)
 {
+	if(ao_file_open_hook)
+		(*ao_file_open_hook)(rel, filepathname, logicalEof);
+
+	return standard_OpenAOSegmentFile(rel, filepathname, logicalEof);
+	
+}
+
+/*
+ * Open an Append Only relation file segment
+ *
+ * The fd module's PathNameOpenFile() is used to open the file, so the
+ * the File* routines can be used to read, write, close, etc, the file.
+ */
+File
+standard_OpenAOSegmentFile(Relation rel, 
+				  char *filepathname, 
+				  int64	logicalEof)
+{
 	int			fileFlags = O_RDWR | PG_BINARY;
 	File		fd;
 
@@ -178,6 +211,19 @@ CloseAOSegmentFile(File fd)
 void
 TruncateAOSegmentFile(File fd, Relation rel, int32 segFileNum, int64 offset)
 {
+	if (ao_file_truncate_hook)
+		(*ao_file_truncate_hook)(fd, rel, segFileNum, offset);
+
+	standard_TruncateAOSegmentFile(fd, rel, segFileNum, offset);
+	
+}
+
+/*
+ * standard Truncate all bytes from offset to end of file.
+ */
+static void
+standard_TruncateAOSegmentFile(File fd, Relation rel, int32 segFileNum, int64 offset)
+{
 	char *relname = RelationGetRelationName(rel);
 
 	Assert(fd > 0);
@@ -193,14 +239,6 @@ TruncateAOSegmentFile(File fd, Relation rel, int32 segFileNum, int64 offset)
 					    relname)));
 	if (RelationNeedsWAL(rel))
 		xlog_ao_truncate(rel->rd_node, segFileNum, offset);
-
-	if (file_truncate_hook)
-	{
-		RelFileNodeBackend rnode;
-		rnode.node = rel->rd_node;
-		rnode.backend = rel->rd_backend;
-		(*file_truncate_hook)(rnode);
-	}
 }
 
 struct mdunlink_ao_callback_ctx
@@ -220,6 +258,16 @@ struct truncate_ao_callback_ctx
 
 void
 mdunlink_ao(RelFileNodeBackend rnode, ForkNumber forkNumber, bool isRedo)
+{
+	if(ao_file_unlink_hook)
+		(*ao_file_unlink_hook)(rnode, forkNumber, isRedo);
+
+	standard_mdunlink_ao(rnode, forkNumber, isRedo);
+	
+}
+
+static void
+standard_mdunlink_ao(RelFileNodeBackend rnode, ForkNumber forkNumber, bool isRedo)
 {
 	const char *path = relpath(rnode, forkNumber);
 
@@ -450,6 +498,21 @@ void
 copy_append_only_data(RelFileNode src, RelFileNode dst,
         BackendId backendid, char relpersistence)
 {
+	if(ao_file_copy_hook)
+		(*ao_file_copy_hook)(src, dst, backendid, relpersistence);
+	else
+		standard_copy_append_only_data(src, dst, backendid, relpersistence);
+}
+
+/*
+ * standard
+ * Like copy_relation_data(), but for AO tables.
+ *
+ */
+static void
+standard_copy_append_only_data(RelFileNode src, RelFileNode dst,
+        BackendId backendid, char relpersistence)
+{
 	char *srcPath;
 	char *dstPath;
 	bool useWal;
@@ -471,14 +534,6 @@ copy_append_only_data(RelFileNode src, RelFileNode dst,
 	copyFiles.useWal = useWal;
 
     ao_foreach_extent_file(copy_append_only_data_perFile, &copyFiles);
-
-	if (file_extend_hook)
-	{
-		RelFileNodeBackend rnode;
-		rnode.node = dst;
-		rnode.backend = backendid;
-		(*file_extend_hook)(rnode);
-	}
 }
 
 static bool

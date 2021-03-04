@@ -235,4 +235,7 @@ extern void AppendOnlyStorageWrite_SetFirstRowNum(AppendOnlyStorageWrite *storag
 
 extern char *AppendOnlyStorageWrite_ContextStr(AppendOnlyStorageWrite *storageWrite);
 
+typedef void (*ao_block_append_hook_type)(AppendOnlyStorageWrite *storageWrite, int32 contentLen);
+extern PGDLLIMPORT ao_block_append_hook_type ao_block_append_hook;
+
 #endif   /* CDBAPPENDONLYSTORAGEWRITE_H */

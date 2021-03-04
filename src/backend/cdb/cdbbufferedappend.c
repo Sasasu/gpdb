@@ -19,6 +19,7 @@
 
 #include <unistd.h>				/* for write() */
 
+#include "access/aomd.h"
 #include "cdb/cdbappendonlyxlog.h"
 #include "cdb/cdbbufferedappend.h"
 #include "pgstat.h"
@@ -27,6 +28,8 @@
 static void BufferedAppendWrite(
 					BufferedAppend *bufferedAppend,
 					bool needsWAL);
+
+ao_buffered_append_hook_type ao_buffered_append_hook = NULL;
 
 /*
  * Determines the amount of memory to supply for
@@ -170,9 +173,6 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 
 		bytesleft -= byteswritten;
 		bytestotal += byteswritten;
-
-		if (file_extend_hook)
-			(*file_extend_hook)(bufferedAppend->relFileNode);
 	}
 
 	elogif(Debug_appendonly_print_append_block, LOG,
@@ -328,6 +328,8 @@ BufferedAppendFinishBuffer(BufferedAppend *bufferedAppend,
 		 * Current large-write memory is full.
 		 */
 		bufferedAppend->largeWriteLen = bufferedAppend->maxLargeWriteLen;
+		if (ao_buffered_append_hook)
+			(*ao_buffered_append_hook)(bufferedAppend, needsWAL);
 		BufferedAppendWrite(bufferedAppend, needsWAL);
 
 		if (newLen > bufferedAppend->maxLargeWriteLen)
@@ -387,8 +389,11 @@ BufferedAppendCompleteFile(BufferedAppend *bufferedAppend,
 	Assert(bufferedAppend->file >= 0);
 
 	if (bufferedAppend->largeWriteLen > 0)
+	{
+		if (ao_buffered_append_hook)
+			(*ao_buffered_append_hook)(bufferedAppend, needsWAL);
 		BufferedAppendWrite(bufferedAppend, needsWAL);
-
+	}
 	*fileLen = bufferedAppend->fileLen;
 	*fileLen_uncompressed = bufferedAppend->fileLen_uncompressed;
 

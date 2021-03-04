@@ -185,4 +185,6 @@ extern void BufferedAppendCompleteFile(
 extern void BufferedAppendFinish(
     BufferedAppend *bufferedAppend);
 
+typedef void (*ao_buffered_append_hook_type)(BufferedAppend *bufferedAppend, bool needsWAL);
+extern PGDLLIMPORT ao_buffered_append_hook_type ao_buffered_append_hook;
 #endif   /* CDBBUFFEREDAPPEND_H */

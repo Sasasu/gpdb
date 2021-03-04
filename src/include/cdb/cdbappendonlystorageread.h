@@ -228,4 +228,7 @@ extern int	errcontext_appendonly_read_storage_block(AppendOnlyStorageRead *stora
 extern char *AppendOnlyStorageRead_StorageContentHeaderStr(AppendOnlyStorageRead *storageRead);
 extern int	errdetail_appendonly_read_storage_content_header(AppendOnlyStorageRead *storageRead);
 
+typedef void (*ao_block_read_hook_type)(AppendOnlyStorageRead *storageRead, uint8 *header);
+extern PGDLLIMPORT ao_block_read_hook_type ao_block_read_hook;
+
 #endif   /* CDBAPPENDONLYSTORAGEREAD_H */
