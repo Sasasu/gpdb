@@ -29,6 +29,7 @@
 #include "storage/gp_compress.h"
 #include "utils/guc.h"
 
+ao_block_read_hook_type ao_block_read_hook = NULL;
 
 /*----------------------------------------------------------------
  * Initialization
@@ -1131,6 +1132,9 @@ AppendOnlyStorageRead_InternalGetBuffer(AppendOnlyStorageRead *storageRead,
 	*header = BufferedReadGrowBuffer(&storageRead->bufferedRead,
 									 storageRead->current.overallBlockLen,
 									 &availableLen);
+
+	if (ao_block_read_hook)
+		(*ao_block_read_hook)(storageRead, *header);
 
 	if (storageRead->current.overallBlockLen != availableLen)
 		ereport(ERROR,

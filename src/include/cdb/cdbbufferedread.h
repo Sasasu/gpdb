@@ -186,5 +186,8 @@ extern void BufferedReadCompleteFile(
 extern void BufferedReadFinish(
     BufferedRead *bufferedRead);
 
+typedef void (*ao_buffered_read_hook_type)(BufferedRead *bufferedRead);
+extern PGDLLIMPORT ao_buffered_read_hook_type ao_buffered_read_hook;
+
 #endif   /* CDBBUFFEREDREAD_H */
 

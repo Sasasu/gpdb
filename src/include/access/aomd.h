@@ -67,4 +67,18 @@ extern void ao_foreach_extent_file(ao_extent_callback callback, void *ctx);
 
 extern void register_dirty_segment_ao(RelFileNode rnode, int segno, File vfd);
 
+
+typedef void (*ao_file_unlink_hook_type)(RelFileNodeBackend rnode, ForkNumber forkNumber, bool isRedo);
+extern PGDLLIMPORT ao_file_unlink_hook_type ao_file_unlink_hook;
+
+typedef void (*ao_file_truncate_hook_type)(File fd, Relation rel, int32 segmentFileNum, int64 offset);
+extern PGDLLIMPORT ao_file_truncate_hook_type ao_file_truncate_hook;
+
+typedef File (*ao_file_open_hook_type)(Relation rel, char *filepathname, int64 logicalEof);
+extern PGDLLIMPORT ao_file_open_hook_type ao_file_open_hook;
+
+typedef void (*ao_file_copy_hook_type)(RelFileNode src, RelFileNode dst, BackendId backendid,
+										char relpersistence);
+extern PGDLLIMPORT ao_file_copy_hook_type ao_file_copy_hook;
+
 #endif							/* AOMD_H */

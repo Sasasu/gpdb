@@ -36,6 +36,7 @@
 #include "utils/faultinjector.h"
 #include "utils/guc.h"
 
+ao_block_append_hook_type ao_block_append_hook = NULL;
 
 /*----------------------------------------------------------------
  * Initialization
@@ -1382,6 +1383,9 @@ AppendOnlyStorageWrite_FinishBuffer(AppendOnlyStorageWrite *storageWrite,
 													rowCount,
 													 /* expectedCompressedLen */ 0);
 
+		if (ao_block_append_hook)
+			(*ao_block_append_hook)(storageWrite, dataRoundedUpLen);
+
 		BufferedAppendFinishBuffer(&storageWrite->bufferedAppend,
 								   bufferLen,
 								   uncompressedlen,
@@ -1426,6 +1430,9 @@ AppendOnlyStorageWrite_FinishBuffer(AppendOnlyStorageWrite *storageWrite,
 													rowCount,
 													compressedLen);
 
+		if (ao_block_append_hook)
+			(*ao_block_append_hook)(storageWrite, bufferLen - storageWrite->currentCompleteHeaderLen);
+		
 		/*
 		 * Finish the current buffer by specifying the used length.
 		 */
@@ -1576,6 +1583,9 @@ AppendOnlyStorageWrite_Content(AppendOnlyStorageWrite *storageWrite,
 			storageWrite->logicalBlockStartOffset =
 				BufferedAppendNextBufferPosition(&(storageWrite->bufferedAppend));
 
+			if (ao_block_append_hook)
+				(*ao_block_append_hook)(storageWrite, bufferLen - storageWrite->currentCompleteHeaderLen);
+
 			/*
 			 * Finish the current buffer by specifying the used length.
 			 */
@@ -1694,6 +1704,9 @@ AppendOnlyStorageWrite_Content(AppendOnlyStorageWrite *storageWrite,
 															executorBlockKind,
 															 /* rowCount */ 0,
 															compressedLen);
+
+				if (ao_block_append_hook)
+					(*ao_block_append_hook)(storageWrite, bufferLen - storageWrite->currentCompleteHeaderLen);
 
 				/*
 				 * Finish the current buffer by specifying the used length.
