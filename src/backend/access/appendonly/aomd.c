@@ -52,9 +52,8 @@ static void standard_TruncateAOSegmentFile(File fd, Relation rel,
 											int32 segFileNum, int64 offset);
 static void standard_mdunlink_ao(RelFileNodeBackend rnode,
 								ForkNumber forkNumber, bool isRedo);
-static void standard_copy_append_only_data(RelFileNode src, RelFileNode dst,
-        									BackendId backendid, char relpersistence);
-
+static void standard_copy_file(char *srcsegpath, char *dstsegpath,
+                       RelFileNode dst, int segfilenum, bool use_wal);
 
 ao_file_unlink_hook_type ao_file_unlink_hook = NULL;
 ao_file_truncate_hook_type ao_file_truncate_hook = NULL;
@@ -410,6 +409,20 @@ mdunlink_ao_perFile(const int segno, void *ctx)
 
 static void
 copy_file(char *srcsegpath, char *dstsegpath,
+          RelFileNode dst, int segfilenum, bool use_wal)
+{
+    if (ao_file_copy_hook) {
+        ao_file_copy_hook(srcsegpath, dstsegpath, dst, segfilenum, use_wal);
+    }
+    else
+    {
+        standard_copy_file(srcsegpath, dstsegpath, dst, segfilenum, use_wal);
+    }
+}
+
+
+static void
+standard_copy_file(char *srcsegpath, char *dstsegpath,
 		  RelFileNode dst, int segfilenum, bool use_wal)
 {
 	File		srcFile;
@@ -496,21 +509,6 @@ struct copy_append_only_data_callback_ctx {
  */
 void
 copy_append_only_data(RelFileNode src, RelFileNode dst,
-        BackendId backendid, char relpersistence)
-{
-	if(ao_file_copy_hook)
-		(*ao_file_copy_hook)(src, dst, backendid, relpersistence);
-	else
-		standard_copy_append_only_data(src, dst, backendid, relpersistence);
-}
-
-/*
- * standard
- * Like copy_relation_data(), but for AO tables.
- *
- */
-static void
-standard_copy_append_only_data(RelFileNode src, RelFileNode dst,
         BackendId backendid, char relpersistence)
 {
 	char *srcPath;
