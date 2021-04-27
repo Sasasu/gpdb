@@ -77,8 +77,8 @@ extern PGDLLIMPORT ao_file_truncate_hook_type ao_file_truncate_hook;
 typedef File (*ao_file_open_hook_type)(Relation rel, char *filepathname, int64 logicalEof);
 extern PGDLLIMPORT ao_file_open_hook_type ao_file_open_hook;
 
-typedef void (*ao_file_copy_hook_type)(RelFileNode src, RelFileNode dst, BackendId backendid,
-										char relpersistence);
+typedef void (*ao_file_copy_hook_type)(char *srcsegpath, char *dstsegpath,
+                                       RelFileNode dst, int segfilenum, bool use_walBackendId);
 extern PGDLLIMPORT ao_file_copy_hook_type ao_file_copy_hook;
 
 #endif							/* AOMD_H */
