@@ -251,4 +251,5 @@ extern bool XLogRecGetBlockTag(XLogReaderState *record, uint8 block_id,
 							   RelFileNode *rnode, ForkNumber *forknum,
 							   BlockNumber *blknum);
 
+
 #endif							/* XLOGREADER_H */

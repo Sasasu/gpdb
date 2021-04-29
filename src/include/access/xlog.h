@@ -388,4 +388,11 @@ extern void SignalPromote(void);
 extern XLogRecPtr XLogLastInsertBeginLoc(void);
 extern void initialize_wal_bytes_written(void);
 
+typedef void (*encryption_xlog_write_hook_type)(TimeLineID timeline, XLogRecPtr lsn, char *buffer, int npages);
+extern PGDLLIMPORT encryption_xlog_write_hook_type encryption_xlog_write_hook;
+
+typedef void (*encryption_xlog_read_hook_type)(TimeLineID timeline, XLogRecPtr lsn, char *buffer);
+extern PGDLLIMPORT encryption_xlog_read_hook_type encryption_xlog_read_hook;
+extern PGDLLIMPORT encryption_xlog_read_hook_type encryption_xlog_early_read_hook;
+
 #endif							/* XLOG_H */
