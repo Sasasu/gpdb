@@ -388,4 +388,12 @@ extern void SignalPromote(void);
 extern XLogRecPtr XLogLastInsertBeginLoc(void);
 extern void initialize_wal_bytes_written(void);
 
+typedef void (*encryption_xlog_write_hook_type)(char *buffer, int npages, uint64 pageOffset, XLogSegNo segNo);
+extern PGDLLIMPORT encryption_xlog_write_hook_type encryption_xlog_write_hook;
+
+typedef void (*encryption_xlog_read_hook_type)(char *buffer, Size length, uint64 pageOffset, XLogSegNo segNo);
+extern PGDLLIMPORT encryption_xlog_read_hook_type encryption_xlog_read_hook;
+extern PGDLLIMPORT encryption_xlog_read_hook_type encryption_xlog_read_dir_hook;
+
+
 #endif							/* XLOG_H */
