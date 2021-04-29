@@ -58,6 +58,7 @@ typedef struct xl_invalid_page
 
 static HTAB *invalid_page_tab = NULL;
 
+encryption_xlog_read_hook_type encryption_xlog_read_hook = NULL;
 
 /* Report a reference to an invalid page */
 static void
@@ -1035,6 +1036,11 @@ read_local_xlog_page(XLogReaderState *state, XLogRecPtr targetPagePtr,
 	 */
 	XLogRead(cur_page, state->wal_segment_size, *pageTLI, targetPagePtr,
 			 XLOG_BLCKSZ);
+
+	if (encryption_xlog_read_hook)
+	{
+		(*encryption_xlog_read_hook)(state->currTLI, targetPagePtr, cur_page);
+	}
 
 	return count;
 }
