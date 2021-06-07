@@ -131,6 +131,7 @@ static void WalRcvSigUsr1Handler(SIGNAL_ARGS);
 static void WalRcvShutdownHandler(SIGNAL_ARGS);
 static void WalRcvQuickDieHandler(SIGNAL_ARGS);
 
+WalReceiver_hook_type WalReceiver_hook = NULL;
 
 /*
  * Process any interrupts the walreceiver process may have received.
@@ -880,6 +881,20 @@ XLogWalRcvProcessMsg(unsigned char type, char *buf, Size len)
 				/* If the primary requested a reply, send one immediately */
 				if (replyRequested)
 					XLogWalRcvSendReply(true, false);
+				break;
+			}
+		case 'E':				/* Defined by extension */
+			{
+				if (!WalReceiver_hook)
+					ereport(ERROR,
+							(errcode(ERRCODE_PROTOCOL_VIOLATION),
+							 errmsg_internal("invalid extension message received from primary")));
+
+				/* copy message to StringInfo */
+				appendBinaryStringInfo(&incoming_message, buf, len);
+
+				/* message handled by extension */
+				WalReceiver_hook(&incoming_message);
 				break;
 			}
 		default:
