@@ -136,6 +136,8 @@ bool		log_replication_commands = false;
  */
 bool		wake_wal_senders = false;
 
+WalSend_hook_type WalSend_hook = NULL;
+
 /*
  * These variables are used similarly to openLogFile/SegNo/Off,
  * but for walsender to read the XLOG.
@@ -257,6 +259,7 @@ static void ProcessRepliesIfAny(void);
 static const char *WalSndGetStateString(WalSndState state);
 static void WalSndKeepalive(bool requestReply);
 static void WalSndKeepaliveIfNecessary(void);
+static void WalSndExtension(void);
 static void WalSndCheckTimeOut(void);
 static long WalSndComputeSleeptime(TimestampTz now);
 static void WalSndPrepareWrite(LogicalDecodingContext *ctx, XLogRecPtr lsn, TransactionId xid, bool last_write);
@@ -2240,8 +2243,10 @@ WalSndLoop(WalSndSendDataCallback send_data)
 		 * again until we've flushed it ... but we'd better assume we are not
 		 * caught up.
 		 */
-		if (!pq_is_send_pending())
+		if (!pq_is_send_pending()) {
 			send_data();
+			WalSndExtension();
+		}
 		else
 			WalSndCaughtUp = false;
 
@@ -3743,6 +3748,31 @@ WalSndKeepaliveIfNecessary(void)
 		/* Try to flush pending output to the client */
 		if (pq_flush_if_writable() != 0)
 			WalSndShutdown();
+	}
+}
+
+static void WalSndExtension(void) {
+	StringInfoData message;
+
+	if (!WalSend_hook)
+		return;
+
+	/* this message is send by extension */
+	initStringInfo(&message);
+	pq_sendbyte(&message, 'E');
+
+	if (WalSend_hook(&message) == 0) {
+		/*
+		* hook report execute success means at least one message need to send.
+		* send it and wrapp in CopyData message.
+		*/
+		pq_putmessage_noblock('d', message.data, message.len);
+	} else {
+		/*
+		 * or reset the message
+		 * XXX: remove this memory alloc
+		 */
+		pfree(message.data);
 	}
 }
 
