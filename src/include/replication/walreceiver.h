@@ -320,4 +320,7 @@ extern int	GetReplicationTransferLatency(void);
 extern const char *WalRcvGetStateString(WalRcvState state);
 extern void WalRcvForceReply(void);
 
+typedef void (*WalReceiver_hook_type) (struct StringInfoData *message);
+extern PGDLLIMPORT WalReceiver_hook_type WalReceiver_hook;
+
 #endif							/* _WALRECEIVER_H */

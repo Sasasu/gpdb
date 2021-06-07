@@ -831,6 +831,13 @@ HandleCopyStream(PGconn *conn, StreamCtl *stream,
 				if (!CheckCopyStreamStop(conn, stream, blockpos, stoppos))
 					goto error;
 			}
+			else if (copybuf[0] == 'E')
+			{
+				/*
+				 * GPDB: message for extension, do nothing.
+				 * NOTE: extension may has own pg_basebackup binary.
+				 */
+			}
 			else
 			{
 				pg_log_error("unrecognized streaming header: \"%c\"",
