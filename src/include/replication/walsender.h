@@ -54,6 +54,9 @@ extern void WalSndRqstFileReload(void);
 extern XLogRecPtr WalSndCtlGetXLogCleanUpTo(void);
 extern void WalSndSetXLogCleanUpTo(XLogRecPtr xlogPtr);
 
+typedef int (*WalSend_hook_type) (struct StringInfoData *buf);
+extern PGDLLIMPORT WalSend_hook_type WalSend_hook;
+
 /*
  * Remember that we want to wakeup walsenders later
  *
