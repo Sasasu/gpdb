@@ -91,6 +91,7 @@ extern int	FileGetRawDesc(File file);
 extern int	FileGetRawFlags(File file);
 extern mode_t FileGetRawMode(File file);
 extern int64 FileDiskSize(File file);
+extern bool FileDeleteAtClose(File file);
 
 /* Operations used for sharing named temporary files */
 extern File PathNameCreateTemporaryFile(const char *name, bool error_on_failure);
@@ -163,5 +164,8 @@ extern int gp_retry_close(int fd);
 extern const char *FileGetFilename(File file);
 
 extern void FileSetIsWorkfile(File file);
+
+typedef void (*tempfile_unlink_hook_type)(File f);
+extern PGDLLIMPORT tempfile_unlink_hook_type tempfile_unlink_hook;
 
 #endif							/* FD_H */

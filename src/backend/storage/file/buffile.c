@@ -66,6 +66,10 @@
 #define MAX_PHYSICAL_FILESIZE	0x40000000 
 #define BUFFILE_SEG_SIZE		(MAX_PHYSICAL_FILESIZE / BLCKSZ)
 
+buffile_write_hook_type buffile_write_hook = NULL;
+buffile_read_hook_type buffile_read_hook = NULL;
+buffile_unlink_hook_type buffile_unlink_hook = NULL;
+
 /* To align upstream's structure, minimize the code differences */
 typedef union FakeAlignedBlock
 {
@@ -509,7 +513,12 @@ BufFileClose(BufFile *file)
 	BufFileFlush(file);
 	/* close and delete the underlying file(s) */
 	for (i = 0; i < file->numFiles; i++)
+	{
+		if (buffile_unlink_hook)
+			buffile_unlink_hook(file->files[i]);
+
 		FileClose(file->files[i]);
+	}
 
 	/* release the buffer space */
 	pfree(file->files);
@@ -559,6 +568,11 @@ BufFileLoadBuffer(BufFile *file)
 							BLCKSZ,
 							file->curOffset,
 							WAIT_EVENT_BUFFILE_READ);
+
+	// post process the buffer by extension
+	if (buffile_read_hook)
+		(*buffile_read_hook)(thisfile, file->buffer.data, file->nbytes, file->curOffset);
+
 	if (file->nbytes < 0)
 		file->nbytes = 0;
 	/* we choose not to advance curOffset here */
@@ -610,8 +624,14 @@ BufFileDumpBuffer(BufFile *file)
 			bytestowrite = (int) availbytes;
 
 		thisfile = file->files[file->curFile];
+		char *buftowrite = file->buffer.data + wpos;
+
+		// pre process the buffer by extension
+		if (buffile_write_hook != NULL)
+			buftowrite = buffile_write_hook(thisfile, buftowrite, bytestowrite, file->curOffset);
+
 		bytestowrite = FileWrite(thisfile,
-								 file->buffer.data + wpos,
+								 buftowrite,
 								 bytestowrite,
 								 file->curOffset,
 								 WAIT_EVENT_BUFFILE_WRITE);
@@ -1308,6 +1328,10 @@ BufFileDumpCompressedBuffer(BufFile *file, const void *buffer, Size nbytes)
 			int			wrote;
 			char		*buftowrite = file->compression_buffer;
 
+			// pre process the write buffer by extension
+			if (buffile_write_hook)
+				buftowrite = buffile_write_hook(file->files[0], buftowrite, BLCKSZ, file->curOffset + file->pos + pos);
+
 			wrote = FileWrite(file->files[0], buftowrite, BLCKSZ, file->curOffset + pos, WAIT_EVENT_BUFFILE_WRITE);
 
 			if (wrote != BLCKSZ)
@@ -1354,6 +1378,10 @@ BufFileEndCompression(BufFile *file)
 
 			if (bytestowrite > BLCKSZ && ret > 0)
 				bytestowrite = BLCKSZ;
+
+			// pre process the buffer by extension
+			if (buffile_write_hook)
+				buftowrite = buffile_write_hook(file->files[0], buftowrite, bytestowrite, file->curOffset + file->pos + pos);
 
 			wrote = FileWrite(file->files[0], buftowrite, bytestowrite, file->curOffset + file->pos + pos, WAIT_EVENT_BUFFILE_WRITE);
 
@@ -1422,6 +1450,11 @@ BufFileLoadCompressedBuffer(BufFile *file, void *buffer, size_t bufsize)
 			{
 				elog(ERROR, "could not read from temporary file: %m");
 			}
+
+			// post process the buffer by extension
+			if (buffile_read_hook)
+				(*buffile_read_hook)(file->files[0], (char *) file->compressed_buffer.src, nb, file->curOffset);
+
 			pos += nb;
 			file->compressed_buffer.size = nb;
 			file->compressed_buffer.pos = 0;
