@@ -66,6 +66,9 @@
 #define MAX_PHYSICAL_FILESIZE	0x40000000 
 #define BUFFILE_SEG_SIZE		(MAX_PHYSICAL_FILESIZE / BLCKSZ)
 
+buffile_write_hook_type buffile_write_hook = NULL;
+buffile_read_hook_type buffile_read_hook = NULL;
+
 /* To align upstream's structure, minimize the code differences */
 typedef union FakeAlignedBlock
 {
@@ -552,6 +555,8 @@ BufFileLoadBuffer(BufFile *file)
 							BLCKSZ,
 							file->curOffset,
 							WAIT_EVENT_BUFFILE_READ);
+    if (buffile_read_hook)
+        (*buffile_read_hook)(file->buffer.data, file->curOffset / BLCKSZ);
 	if (file->nbytes < 0)
 		file->nbytes = 0;
 	/* we choose not to advance curOffset here */
@@ -574,6 +579,8 @@ BufFileDumpBuffer(BufFile *file)
 	int			bytestowrite;
 	File		thisfile;
 
+    if (buffile_write_hook)
+        (*buffile_write_hook)(file->buffer.data, file->curOffset / BLCKSZ);
 	/*
 	 * Unlike BufFileLoadBuffer, we must dump the whole buffer even if it
 	 * crosses a component-file boundary; so we need a loop.
