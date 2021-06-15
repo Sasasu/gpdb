@@ -69,4 +69,13 @@ extern bool gp_workfile_compression;
 extern void BufFilePledgeSequential(BufFile *buffile);
 extern void BufFileSetIsTempFile(BufFile *file, bool isTempFile);
 
+typedef char* (*buffile_write_hook_type)(File f, char *buffer, int64_t buffer_len, int64_t offset);
+extern PGDLLIMPORT buffile_write_hook_type buffile_write_hook;
+
+typedef void (*buffile_read_hook_type)(File f, char *buffer, int64_t buffer_len, int64_t offset);
+extern PGDLLIMPORT buffile_read_hook_type buffile_read_hook;
+
+typedef void (*buffile_unlink_hook_type)(File f);
+extern PGDLLIMPORT buffile_unlink_hook_type buffile_unlink_hook;
+
 #endif							/* BUFFILE_H */
