@@ -348,6 +348,7 @@ static void unlink_if_exists_fname(const char *fname, bool isdir, int elevel);
 static int	fsync_fname_ext(const char *fname, bool isdir, bool ignore_perm, int elevel);
 static int	fsync_parent_path(const char *fname, int elevel);
 
+tempfile_unlink_hook_type tempfile_unlink_hook = NULL;
 
 /*
  * pg_fsync --- do fsync with or without writethrough
@@ -2147,6 +2148,13 @@ FileDiskSize(File file)
 	return (int64) buf.st_size;
 }
 
+bool FileDeleteAtClose(File file)
+{
+	Assert(FileIsValid(file));
+
+	return VfdCache[file].fdstate & FD_DELETE_AT_CLOSE;
+}
+
 off_t
 FileSize(File file)
 {
@@ -2988,7 +2996,13 @@ CleanupTempFiles(bool isCommit, bool isProcExit)
 				 * debugging cross-check.
 				 */
 				if (isProcExit)
+				{
+					if (tempfile_unlink_hook)
+						tempfile_unlink_hook(i);
+
 					FileClose(i);
+				}
+
 				else if (fdstate & FD_CLOSE_AT_EOXACT)
 				{
 					elog(WARNING,
