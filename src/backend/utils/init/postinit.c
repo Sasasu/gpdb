@@ -732,6 +732,8 @@ InitPostgres(const char *in_dbname, Oid dboid, const char *username,
 	 */
 	InitBufferPoolBackend();
 
+	process_shared_preload_libraries();
+
 	/*
 	 * Initialize local process's access to XLOG.
 	 */
