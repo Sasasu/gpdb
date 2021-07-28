@@ -830,6 +830,9 @@ HandleCopyStream(PGconn *conn, StreamCtl *stream,
 				 */
 				if (!CheckCopyStreamStop(conn, stream, blockpos, stoppos))
 					goto error;
+			} if (copybuf[0] == 'e')
+			{
+				/* GPDB: message for extension, do nothing */
 			}
 			else
 			{
