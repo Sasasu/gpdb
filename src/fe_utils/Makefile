@@ -20,7 +20,7 @@ include $(top_builddir)/src/Makefile.global
 override CPPFLAGS := -DFRONTEND -I$(libpq_srcdir) $(CPPFLAGS)
 
 OBJS = conditional.o mbprint.o print.o psqlscan.o recovery_gen.o \
-       simple_list.o string_utils.o
+       simple_list.o string_utils.o frontend_hook.o
 
 all: libpgfeutils.a
 
