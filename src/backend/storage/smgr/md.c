@@ -48,6 +48,8 @@
 #include "catalog/pg_tablespace.h"
 #include "utils/faultinjector.h"
 
+mdsyncfiletag_hook_type mdsyncfiletag_hook = NULL;
+
 /*
  *	The magnetic disk storage manager keeps track of open file
  *	descriptors in its own descriptor pool.  This is done to make it
@@ -1410,6 +1412,9 @@ mdsyncfiletag(const FileTag *ftag, char *path)
 					 EXTENSION_RETURN_NULL | EXTENSION_DONT_CHECK_SIZE);
 	if (v == NULL)
 		return -1;
+
+	if (mdsyncfiletag_hook != NULL)
+		mdsyncfiletag_hook(ftag, path);
 
 	/* Try to fsync the file. */
 	return FileSync(v->mdfd_vfd, WAIT_EVENT_DATA_FILE_SYNC);
