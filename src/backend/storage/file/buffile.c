@@ -540,8 +540,10 @@ BufFileLoadBuffer(BufFile *file)
 		file->curFile + 1 < file->numFiles)
 	{
 		file->curFile++;
-		file->curOffset = 0L;
+		file->curOffset -= MAX_PHYSICAL_FILESIZE;
 	}
+
+	Assert(file->curOffset % BLCKSZ == 0);
 
 	/*
 	 * Read whatever we can get, up to a full bufferload.
@@ -676,11 +678,17 @@ BufFileRead(BufFile *file, void *ptr, size_t size)
 		if (file->pos >= file->nbytes)
 		{
 			/* Try to load more data into buffer. */
-			file->curOffset += file->pos;
-			file->pos = 0;
+			int offsetInBlock = file->curOffset % BLCKSZ;
 			file->nbytes = 0;
+			file->pos += offsetInBlock;
+			file->curOffset -= offsetInBlock;
+
+			/* pos out of current block, move to next block */
+			if (file->pos >= BLCKSZ)
+				file->pos -= BLCKSZ, file->curOffset += BLCKSZ;
+
 			BufFileLoadBuffer(file);
-			if (file->nbytes <= 0)
+			if (file->nbytes <= 0 || (file->nbytes == file->pos && file->nbytes != BLCKSZ))
 				break;			/* no more data available */
 		}
 
