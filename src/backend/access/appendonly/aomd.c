@@ -46,6 +46,12 @@ static bool mdunlink_ao_perFile(const int segno, void *ctx);
 static bool copy_append_only_data_perFile(const int segno, void *ctx);
 static bool truncate_ao_perFile(const int segno, void *ctx);
 
+typedef char* (*ao_file_write_hook_type)(File file, char *buffer, int amount, off_t offset);
+extern PGDLLIMPORT ao_file_write_hook_type ao_file_write_hook; // in cdbbufferedappend.c
+
+typedef void (*ao_file_read_hook_type)(File file, char *buffer, int actualLen, off_t offset);
+extern PGDLLIMPORT ao_file_read_hook_type ao_file_read_hook; // in cdbbufferedread.c
+
 int
 AOSegmentFilePathNameLen(Relation rel)
 {
@@ -196,10 +202,8 @@ TruncateAOSegmentFile(File fd, Relation rel, int32 segFileNum, int64 offset)
 
 	if (file_truncate_hook)
 	{
-		RelFileNodeBackend rnode;
-		rnode.node = rel->rd_node;
-		rnode.backend = rel->rd_backend;
-		(*file_truncate_hook)(rnode);
+		RelFileNodeBackend rnode = {.node = rel->rd_node, .backend = rel->rd_backend};
+		(*file_truncate_hook)(&(SMgrRelationData){.smgr_rnode = rnode}, MAIN_FORKNUM, offset / BLCKSZ);
 	}
 }
 
@@ -402,6 +406,7 @@ copy_file(char *srcsegpath, char *dstsegpath,
 	while(left > 0)
 	{
 		int			len;
+		char*		bytestowrite = buffer;
 
 		CHECK_FOR_INTERRUPTS();
 
@@ -412,7 +417,18 @@ copy_file(char *srcsegpath, char *dstsegpath,
 					 errmsg("could not read %d bytes from file \"%s\": %m",
 							len, srcsegpath)));
 
-		if (FileWrite(dstFile, buffer, len, offset, WAIT_EVENT_DATA_FILE_WRITE) != len)
+		// Q: why decrypt-encrypt here?
+		// A: why copy data will insert raw data to WAL?
+
+		// post process the buffer by extension
+		if (ao_file_read_hook)
+			ao_file_read_hook(srcFile, buffer, len, offset);
+
+		// pre process the buffer by extension
+		if (ao_file_write_hook)
+			bytestowrite = ao_file_write_hook(dstFile, buffer, len, offset);
+
+		if (FileWrite(dstFile, bytestowrite, len, offset, WAIT_EVENT_DATA_FILE_WRITE) != len)
 			ereport(ERROR,
 					(errcode_for_file_access(),
 					 errmsg("could not write %d bytes to file \"%s\": %m",
@@ -472,12 +488,11 @@ copy_append_only_data(RelFileNode src, RelFileNode dst,
 
     ao_foreach_extent_file(copy_append_only_data_perFile, &copyFiles);
 
+	// TODO: used to do what?
 	if (file_extend_hook)
 	{
-		RelFileNodeBackend rnode;
-		rnode.node = dst;
-		rnode.backend = backendid;
-		(*file_extend_hook)(rnode);
+		RelFileNodeBackend rnode = {.node = dst, .backend = backendid};
+		(*file_extend_hook)(&(SMgrRelationData){.smgr_rnode = rnode}, MAIN_FORKNUM, 0, NULL, true);
 	}
 }
 
