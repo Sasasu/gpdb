@@ -28,6 +28,8 @@ static void BufferedAppendWrite(
 					BufferedAppend *bufferedAppend,
 					bool needsWAL);
 
+ao_file_write_hook_type ao_file_write_hook = NULL;
+
 /*
  * Determines the amount of memory to supply for
  * BufferedAppend given the desired buffer and
@@ -155,9 +157,14 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 	while (bytesleft > 0)
 	{
 		int32		byteswritten;
+		char*		bytetowritten = (char*) largeWriteMemory + bytestotal;
+
+		// pre process the buffer by extension
+		if (ao_file_write_hook)
+			bytetowritten = ao_file_write_hook(bufferedAppend->file, bytetowritten, bytesleft, bufferedAppend->largeWritePosition + bytestotal);
 
 		byteswritten = FileWrite(bufferedAppend->file,
-								 (char *) largeWriteMemory + bytestotal,
+								 bytetowritten,
 								 bytesleft,
 								 bufferedAppend->largeWritePosition + bytestotal,
 								 WAIT_EVENT_DATA_FILE_WRITE);
@@ -170,9 +177,6 @@ BufferedAppendWrite(BufferedAppend *bufferedAppend, bool needsWAL)
 
 		bytesleft -= byteswritten;
 		bytestotal += byteswritten;
-
-		if (file_extend_hook)
-			(*file_extend_hook)(bufferedAppend->relFileNode);
 	}
 
 	elogif(Debug_appendonly_print_append_block, LOG,

@@ -28,6 +28,9 @@
 #include "utils/faultinjector.h"
 #include "utils/faultinjector_lists.h"
 
+typedef char* (*ao_file_write_hook_type)(File file, char *buffer, int amount, off_t offset);
+extern ao_file_write_hook_type ao_file_write_hook; // in cdbbufferedappend.c
+
 /*
  * Insert an AO XLOG/AOCO record.
  *
@@ -88,6 +91,10 @@ ao_insert_replay(XLogReaderState *record)
 		XLogAOSegmentFile(xlrec->target.node, xlrec->target.segment_filenum);
 		return;
 	}
+
+	// pre process the buffer by extension
+	if (ao_file_write_hook)
+		buffer = ao_file_write_hook(file, buffer, len, xlrec->target.offset);
 
 	written_len = FileWrite(file, buffer, len, xlrec->target.offset,
 							WAIT_EVENT_COPY_FILE_WRITE);
