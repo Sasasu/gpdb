@@ -44,6 +44,12 @@ file_create_hook_type file_create_hook = NULL;
 file_extend_hook_type file_extend_hook = NULL;
 file_truncate_hook_type file_truncate_hook = NULL;
 file_unlink_hook_type file_unlink_hook = NULL;
+file_create_ao_hook_type file_create_ao_hook = NULL;
+file_writeback_hook_type file_writeback_hook = NULL;
+file_write_hook_type file_write_hook = NULL;
+file_prefetch_hook_type file_prefetch_hook = NULL;
+file_read_hook_type file_read_hook = NULL;
+file_immedsync_hook_type file_immedsync_hook = NULL;
 
 typedef struct f_smgr
 {
@@ -405,10 +411,10 @@ smgrcreate(SMgrRelation reln, ForkNumber forknum, bool isRedo)
 							reln->smgr_rnode.node.dbNode,
 							isRedo);
 
-    smgrsw[reln->smgr_which].smgr_create(reln, forknum, isRedo);
+	smgrsw[reln->smgr_which].smgr_create(reln, forknum, isRedo);
 
 	if (file_create_hook)
-		(*file_create_hook)(reln->smgr_rnode);
+		(*file_create_hook)(reln, forknum, isRedo);
 }
 
 /*
@@ -423,8 +429,9 @@ void
 smgrcreate_ao(RelFileNodeBackend rnode, int32 segmentFileNum, bool isRedo)
 {
 	mdcreate_ao(rnode, segmentFileNum, isRedo);
-	if (file_create_hook)
-		(*file_create_hook)(rnode);
+
+	if (file_create_ao_hook)
+		(*file_create_ao_hook)(rnode, segmentFileNum, isRedo);
 }
 
 /*
@@ -493,18 +500,20 @@ smgrdounlinkall(SMgrRelation *rels, int nrels, bool isRedo)
 	 * ERROR, because we've already decided to commit or abort the current
 	 * xact.
 	 */
-
 	for (i = 0; i < nrels; i++)
 	{
-        int                which = rels[i]->smgr_which;
+		int which = rels[i]->smgr_which;
 
 		for (forknum = 0; forknum <= MAX_FORKNUM; forknum++)
 			smgrsw[which].smgr_unlink(rnodes[i], forknum, isRedo);
 	}
 
 	if (file_unlink_hook)
+	{
 		for (i = 0; i < nrels; i++)
-			(*file_unlink_hook)(rnodes[i]);
+			for (forknum = 0; forknum <= MAX_FORKNUM; forknum++)
+				(*file_unlink_hook)(rels[i], forknum, isRedo);
+	}
 
 	pfree(rnodes);
 }
@@ -559,6 +568,9 @@ smgrdounlinkfork(SMgrRelation reln, ForkNumber forknum, bool isRedo)
 	 * xact.
 	 */
 	smgrsw[which].smgr_unlink(rnode, forknum, isRedo);
+
+	if (file_unlink_hook)
+		(*file_unlink_hook)(reln, forknum, isRedo);
 }
 
 /*
@@ -575,10 +587,11 @@ void
 smgrextend(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		   char *buffer, bool skipFsync)
 {
+	if (file_extend_hook)
+		buffer = (*file_extend_hook)(reln, forknum, blocknum, buffer, skipFsync);
+
 	smgrsw[reln->smgr_which].smgr_extend(reln, forknum, blocknum,
-										 buffer, skipFsync);
-    if (file_extend_hook)
-        (*file_extend_hook)(reln->smgr_rnode);
+					 buffer, skipFsync);
 }
 
 /*
@@ -587,6 +600,9 @@ smgrextend(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 void
 smgrprefetch(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum)
 {
+	if (file_prefetch_hook)
+		(*file_prefetch_hook)(reln, forknum, blocknum);
+
 	smgrsw[reln->smgr_which].smgr_prefetch(reln, forknum, blocknum);
 }
 
@@ -603,6 +619,9 @@ smgrread(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		 char *buffer)
 {
 	smgrsw[reln->smgr_which].smgr_read(reln, forknum, blocknum, buffer);
+
+	if (file_read_hook)
+		(*file_read_hook)(reln, forknum, blocknum, buffer);
 }
 
 /*
@@ -624,8 +643,11 @@ void
 smgrwrite(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		  char *buffer, bool skipFsync)
 {
+	if (file_write_hook)
+		buffer = (*file_write_hook)(reln, forknum, blocknum, buffer, skipFsync);
+
 	smgrsw[reln->smgr_which].smgr_write(reln, forknum, blocknum,
-										buffer, skipFsync);
+								buffer, skipFsync);
 }
 
 
@@ -637,8 +659,12 @@ void
 smgrwriteback(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 			  BlockNumber nblocks)
 {
+	if (file_writeback_hook)
+		(*file_writeback_hook)(reln, forknum, blocknum,
+							nblocks);
+
 	smgrsw[reln->smgr_which].smgr_writeback(reln, forknum, blocknum,
-											nblocks);
+									nblocks);
 }
 
 /*
@@ -684,7 +710,7 @@ smgrtruncate(SMgrRelation reln, ForkNumber forknum, BlockNumber nblocks)
 	smgrsw[reln->smgr_which].smgr_truncate(reln, forknum, nblocks);
 
 	if (file_truncate_hook)
-		(*file_truncate_hook)(reln->smgr_rnode);
+		(*file_truncate_hook)(reln, forknum, nblocks);
 }
 
 /*
@@ -713,6 +739,9 @@ smgrtruncate(SMgrRelation reln, ForkNumber forknum, BlockNumber nblocks)
 void
 smgrimmedsync(SMgrRelation reln, ForkNumber forknum)
 {
+	if (file_immedsync_hook)
+		(*file_immedsync_hook)(reln, forknum);
+
 	smgrsw[reln->smgr_which].smgr_immedsync(reln, forknum);
 }
 
