@@ -134,6 +134,8 @@
 
 const char *synthetic_sql = "(internally generated SQL command)";
 
+before_copy_data_hook_type before_copy_data_hook = NULL;
+
 /*
  * ON COMMIT action list
  */
@@ -14429,6 +14431,10 @@ ATExecSetTableSpace(Oid tableOid, Oid newTableSpace, LOCKMODE lockmode)
 	newrnode = rel->rd_node;
 	newrnode.relNode = newrelfilenode;
 	newrnode.spcNode = newTableSpace;
+
+	/* let extension known we will copy data */
+	if (before_copy_data_hook)
+		before_copy_data_hook(rel, &newrnode);
 
 	/* hand off to AM to actually create the new filenode and copy the data */
 	if (rel->rd_rel->relkind == RELKIND_INDEX)
