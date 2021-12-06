@@ -118,5 +118,8 @@ extern void ATExecGPPartCmds(Relation origrel, AlterTableCmd *cmd);
 extern void GpRenameChildPartitions(Relation targetrelation,
 									const char *oldparentrelname,
 									const char *newparentrelname);
+typedef struct RelFileNode RelFileNode;
+typedef void (*before_copy_data_hook_type) (Relation origrel, RelFileNode *newrel);
+extern PGDLLIMPORT before_copy_data_hook_type before_copy_data_hook;
 
 #endif							/* TABLECMDS_H */
