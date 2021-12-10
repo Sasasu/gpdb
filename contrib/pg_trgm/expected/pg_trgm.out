@@ -1,3 +1,4 @@
+set optimizer=off;
 CREATE EXTENSION pg_trgm;
 select show_trgm('');
  show_trgm 
@@ -59,7 +60,7 @@ select similarity('---', '####---');
           0
 (1 row)
 
-CREATE TABLE test_trgm(t text);
+CREATE TABLE test_trgm(t text) DISTRIBUTED BY (t);
 \copy test_trgm from 'data/trgm.data'
 select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t;
       t      |   sml    
@@ -2330,12 +2331,16 @@ select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu198
 
 explain (costs off)
 select t <-> 'q0987wertyu0988', t from test_trgm order by t <-> 'q0987wertyu0988' limit 2;
-                    QUERY PLAN                     
----------------------------------------------------
+                          QUERY PLAN                           
+---------------------------------------------------------------
  Limit
-   ->  Index Scan using trgm_idx on test_trgm
-         Order By: (t <-> 'q0987wertyu0988'::text)
-(3 rows)
+   ->  Gather Motion 3:1  (slice1; segments: 3)
+         Merge Key: ((t <-> 'q0987wertyu0988'::text))
+         ->  Limit
+               ->  Index Scan using trgm_idx on test_trgm
+                     Order By: (t <-> 'q0987wertyu0988'::text)
+ Optimizer: Postgres query optimizer
+(7 rows)
 
 select t <-> 'q0987wertyu0988', t from test_trgm order by t <-> 'q0987wertyu0988' limit 2;
  ?column? |      t      
@@ -3485,7 +3490,7 @@ select count(*) from test_trgm where t ~ '[qwerty]{2}-?[qwerty]{2}';
   1000
 (1 row)
 
-create table test2(t text);
+create table test2(t text) distributed by (t);
 insert into test2 values ('abcdef');
 insert into test2 values ('quark');
 insert into test2 values ('  z foo bar');
@@ -3494,60 +3499,64 @@ create index test2_idx_gin on test2 using gin (t gin_trgm_ops);
 set enable_seqscan=off;
 explain (costs off)
   select * from test2 where t like '%BCD%';
-                QUERY PLAN                
-------------------------------------------
- Bitmap Heap Scan on test2
-   Recheck Cond: (t ~~ '%BCD%'::text)
-   ->  Bitmap Index Scan on test2_idx_gin
-         Index Cond: (t ~~ '%BCD%'::text)
-(4 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Bitmap Heap Scan on test2
+         Recheck Cond: (t ~~ '%BCD%'::text)
+         ->  Bitmap Index Scan on test2_idx_gin
+               Index Cond: (t ~~ '%BCD%'::text)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 explain (costs off)
   select * from test2 where t ilike '%BCD%';
-                QUERY PLAN                 
--------------------------------------------
- Bitmap Heap Scan on test2
-   Recheck Cond: (t ~~* '%BCD%'::text)
-   ->  Bitmap Index Scan on test2_idx_gin
-         Index Cond: (t ~~* '%BCD%'::text)
-(4 rows)
+                   QUERY PLAN                    
+-------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Bitmap Heap Scan on test2
+         Recheck Cond: (t ~~* '%BCD%'::text)
+         ->  Bitmap Index Scan on test2_idx_gin
+               Index Cond: (t ~~* '%BCD%'::text)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
-select * from test2 where t like '%BCD%';
+select * from test2 where t like '%BCD%' order by t;
  t 
 ---
 (0 rows)
 
-select * from test2 where t like '%bcd%';
+select * from test2 where t like '%bcd%' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t like E'%\\bcd%';
+select * from test2 where t like E'%\\bcd%' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ilike '%BCD%';
+select * from test2 where t ilike '%BCD%' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ilike 'qua%';
+select * from test2 where t ilike 'qua%' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t like '%z foo bar%';
+select * from test2 where t like '%z foo bar%' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t like '  z foo%';
+select * from test2 where t like '  z foo%' order by t;
       t      
 -------------
    z foo bar
@@ -3555,93 +3564,97 @@ select * from test2 where t like '  z foo%';
 
 explain (costs off)
   select * from test2 where t ~ '[abc]{3}';
-                 QUERY PLAN                 
---------------------------------------------
- Bitmap Heap Scan on test2
-   Recheck Cond: (t ~ '[abc]{3}'::text)
-   ->  Bitmap Index Scan on test2_idx_gin
-         Index Cond: (t ~ '[abc]{3}'::text)
-(4 rows)
+                    QUERY PLAN                    
+--------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Bitmap Heap Scan on test2
+         Recheck Cond: (t ~ '[abc]{3}'::text)
+         ->  Bitmap Index Scan on test2_idx_gin
+               Index Cond: (t ~ '[abc]{3}'::text)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
 explain (costs off)
   select * from test2 where t ~* 'DEF';
-                QUERY PLAN                
-------------------------------------------
- Bitmap Heap Scan on test2
-   Recheck Cond: (t ~* 'DEF'::text)
-   ->  Bitmap Index Scan on test2_idx_gin
-         Index Cond: (t ~* 'DEF'::text)
-(4 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Bitmap Heap Scan on test2
+         Recheck Cond: (t ~* 'DEF'::text)
+         ->  Bitmap Index Scan on test2_idx_gin
+               Index Cond: (t ~* 'DEF'::text)
+ Optimizer: Postgres query optimizer
+(6 rows)
 
-select * from test2 where t ~ '[abc]{3}';
+select * from test2 where t ~ '[abc]{3}' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~ 'a[bc]+d';
+select * from test2 where t ~ 'a[bc]+d' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~ '(abc)*$';
+select * from test2 where t ~ '(abc)*$' order by t;
       t      
 -------------
+ /123/-45/
  abcdef
  quark
    z foo bar
- /123/-45/
 (4 rows)
 
-select * from test2 where t ~* 'DEF';
+select * from test2 where t ~* 'DEF' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~ 'dEf';
+select * from test2 where t ~ 'dEf' order by t;
  t 
 ---
 (0 rows)
 
-select * from test2 where t ~* '^q';
+select * from test2 where t ~* '^q' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~* '[abc]{3}[def]{3}';
+select * from test2 where t ~* '[abc]{3}[def]{3}' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~* 'ab[a-z]{3}';
+select * from test2 where t ~* 'ab[a-z]{3}' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~* '(^| )qua';
+select * from test2 where t ~* '(^| )qua' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ 'q.*rk$';
+select * from test2 where t ~ 'q.*rk$' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ 'q';
+select * from test2 where t ~ 'q' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ '[a-z]{3}';
+select * from test2 where t ~ '[a-z]{3}' order by t;
       t      
 -------------
  abcdef
@@ -3649,42 +3662,42 @@ select * from test2 where t ~ '[a-z]{3}';
    z foo bar
 (3 rows)
 
-select * from test2 where t ~* '(a{10}|b{10}|c{10}){10}';
+select * from test2 where t ~* '(a{10}|b{10}|c{10}){10}' order by t;
  t 
 ---
 (0 rows)
 
-select * from test2 where t ~ 'z foo bar';
+select * from test2 where t ~ 'z foo bar' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ ' z foo bar';
+select * from test2 where t ~ ' z foo bar' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ '  z foo bar';
+select * from test2 where t ~ '  z foo bar' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ '  z foo';
+select * from test2 where t ~ '  z foo' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ 'qua(?!foo)';
+select * from test2 where t ~ 'qua(?!foo)' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ '/\d+/-\d';
+select * from test2 where t ~ '/\d+/-\d' order by t;
      t     
 -----------
  /123/-45/
@@ -3695,56 +3708,60 @@ create index test2_idx_gist on test2 using gist (t gist_trgm_ops);
 set enable_seqscan=off;
 explain (costs off)
   select * from test2 where t like '%BCD%';
-                QUERY PLAN                
-------------------------------------------
- Index Scan using test2_idx_gist on test2
-   Index Cond: (t ~~ '%BCD%'::text)
-(2 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Index Scan using test2_idx_gist on test2
+         Index Cond: (t ~~ '%BCD%'::text)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 explain (costs off)
   select * from test2 where t ilike '%BCD%';
-                QUERY PLAN                
-------------------------------------------
- Index Scan using test2_idx_gist on test2
-   Index Cond: (t ~~* '%BCD%'::text)
-(2 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Index Scan using test2_idx_gist on test2
+         Index Cond: (t ~~* '%BCD%'::text)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
-select * from test2 where t like '%BCD%';
+select * from test2 where t like '%BCD%' order by t;
  t 
 ---
 (0 rows)
 
-select * from test2 where t like '%bcd%';
+select * from test2 where t like '%bcd%' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t like E'%\\bcd%';
+select * from test2 where t like E'%\\bcd%' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ilike '%BCD%';
+select * from test2 where t ilike '%BCD%' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ilike 'qua%';
+select * from test2 where t ilike 'qua%' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t like '%z foo bar%';
+select * from test2 where t like '%z foo bar%' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t like '  z foo%';
+select * from test2 where t like '  z foo%' order by t;
       t      
 -------------
    z foo bar
@@ -3752,89 +3769,93 @@ select * from test2 where t like '  z foo%';
 
 explain (costs off)
   select * from test2 where t ~ '[abc]{3}';
-                QUERY PLAN                
-------------------------------------------
- Index Scan using test2_idx_gist on test2
-   Index Cond: (t ~ '[abc]{3}'::text)
-(2 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Index Scan using test2_idx_gist on test2
+         Index Cond: (t ~ '[abc]{3}'::text)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
 explain (costs off)
   select * from test2 where t ~* 'DEF';
-                QUERY PLAN                
-------------------------------------------
- Index Scan using test2_idx_gist on test2
-   Index Cond: (t ~* 'DEF'::text)
-(2 rows)
+                   QUERY PLAN                   
+------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)
+   ->  Index Scan using test2_idx_gist on test2
+         Index Cond: (t ~* 'DEF'::text)
+ Optimizer: Postgres query optimizer
+(4 rows)
 
-select * from test2 where t ~ '[abc]{3}';
+select * from test2 where t ~ '[abc]{3}' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~ 'a[bc]+d';
+select * from test2 where t ~ 'a[bc]+d' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~ '(abc)*$';
+select * from test2 where t ~ '(abc)*$' order by t;
       t      
 -------------
+ /123/-45/
  abcdef
  quark
    z foo bar
- /123/-45/
 (4 rows)
 
-select * from test2 where t ~* 'DEF';
+select * from test2 where t ~* 'DEF' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~ 'dEf';
+select * from test2 where t ~ 'dEf' order by t;
  t 
 ---
 (0 rows)
 
-select * from test2 where t ~* '^q';
+select * from test2 where t ~* '^q' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~* '[abc]{3}[def]{3}';
+select * from test2 where t ~* '[abc]{3}[def]{3}' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~* 'ab[a-z]{3}';
+select * from test2 where t ~* 'ab[a-z]{3}' order by t;
    t    
 --------
  abcdef
 (1 row)
 
-select * from test2 where t ~* '(^| )qua';
+select * from test2 where t ~* '(^| )qua' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ 'q.*rk$';
+select * from test2 where t ~ 'q.*rk$' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ 'q';
+select * from test2 where t ~ 'q' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ '[a-z]{3}';
+select * from test2 where t ~ '[a-z]{3}' order by t;
       t      
 -------------
  abcdef
@@ -3842,42 +3863,42 @@ select * from test2 where t ~ '[a-z]{3}';
    z foo bar
 (3 rows)
 
-select * from test2 where t ~* '(a{10}|b{10}|c{10}){10}';
+select * from test2 where t ~* '(a{10}|b{10}|c{10}){10}' order by t;
  t 
 ---
 (0 rows)
 
-select * from test2 where t ~ 'z foo bar';
+select * from test2 where t ~ 'z foo bar' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ ' z foo bar';
+select * from test2 where t ~ ' z foo bar' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ '  z foo bar';
+select * from test2 where t ~ '  z foo bar' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ '  z foo';
+select * from test2 where t ~ '  z foo' order by t;
       t      
 -------------
    z foo bar
 (1 row)
 
-select * from test2 where t ~ 'qua(?!foo)';
+select * from test2 where t ~ 'qua(?!foo)' order by t;
    t   
 -------
  quark
 (1 row)
 
-select * from test2 where t ~ '/\d+/-\d';
+select * from test2 where t ~ '/\d+/-\d' order by t;
      t     
 -----------
  /123/-45/
