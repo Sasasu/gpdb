@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_cidr (
 	i cidr
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_cidr VALUES
 	( '1.2.3.4' ),

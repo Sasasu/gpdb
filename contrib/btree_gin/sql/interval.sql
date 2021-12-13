@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_interval (
 	i interval
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_interval VALUES
 	( '03:55:08' ),

@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_date (
 	i date
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_date VALUES
 	( '2004-10-23' ),

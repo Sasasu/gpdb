@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_oid (
 	i oid
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_oid VALUES (0),(1),(2),(3),(4),(5);
 

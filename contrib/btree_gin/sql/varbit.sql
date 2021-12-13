@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_varbit (
 	i varbit
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_varbit VALUES ('001'),('010'),('011'),('100'),('101'),('110');
 

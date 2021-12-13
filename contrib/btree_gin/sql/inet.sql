@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_inet (
 	i inet
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_inet VALUES
 	( '1.2.3.4/16' ),

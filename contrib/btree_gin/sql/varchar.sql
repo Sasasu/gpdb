@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_varchar (
 	i varchar
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_varchar VALUES ('a'),('ab'),('abc'),('abb'),('axy'),('xyz');
 

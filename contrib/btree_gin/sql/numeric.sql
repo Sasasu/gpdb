@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_numeric (
 	i numeric
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_numeric VALUES (-2),(-1),(0),(1),(2),(3);
 

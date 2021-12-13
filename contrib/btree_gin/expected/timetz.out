@@ -1,7 +1,7 @@
 set enable_seqscan=off;
 CREATE TABLE test_timetz (
 	i timetz
-);
+) DISTRIBUTED BY(i);
 INSERT INTO test_timetz VALUES
 	( '03:55:08 GMT+2' ),
 	( '04:55:08 GMT+2' ),

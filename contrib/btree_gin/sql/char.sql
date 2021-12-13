@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_char (
 	i "char"
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_char VALUES ('a'),('b'),('c'),('d'),('e'),('f');
 

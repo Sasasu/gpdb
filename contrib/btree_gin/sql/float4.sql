@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_float4 (
 	i float4
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_float4 VALUES (-2),(-1),(0),(1),(2),(3);
 

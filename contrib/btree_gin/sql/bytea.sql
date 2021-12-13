@@ -4,7 +4,7 @@ SET bytea_output TO escape;
 
 CREATE TABLE test_bytea (
 	i bytea
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_bytea VALUES ('a'),('ab'),('abc'),('abb'),('axy'),('xyz');
 

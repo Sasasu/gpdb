@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_timestamptz (
 	i timestamptz
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_timestamptz VALUES
 	( '2004-10-26 03:55:08' ),

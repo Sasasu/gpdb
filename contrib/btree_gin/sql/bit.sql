@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_bit (
 	i bit(3)
-);
+) DISTRIBUTED BY(i);
 
 INSERT INTO test_bit VALUES ('001'),('010'),('011'),('100'),('101'),('110');
 

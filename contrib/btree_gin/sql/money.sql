@@ -2,7 +2,7 @@ set enable_seqscan=off;
 
 CREATE TABLE test_money (
 	i money
-);
+) DISTRIBUTED BY(i cdbhash_cash_ops);
 
 INSERT INTO test_money VALUES ('-2'),('-1'),('0'),('1'),('2'),('3');
 
