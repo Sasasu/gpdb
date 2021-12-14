@@ -90,7 +90,9 @@ gin_extract_query_##type(PG_FUNCTION_ARGS)									\
 		case BTGreaterEqualStrategyNumber:									\
 		case BTGreaterStrategyNumber:										\
 			*ptr_partialmatch = true;										\
+			break;															\
 		case BTEqualStrategyNumber:											\
+			*ptr_partialmatch = true;										\
 			entries[0] = datum;												\
 			break;															\
 		default:															\
