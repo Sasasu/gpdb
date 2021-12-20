@@ -23,6 +23,10 @@
 #include "filemap.h"
 #include "pg_rewind.h"
 
+#include "fe_utils/pg_rewind_hook.h"
+
+pg_rewind_hook_before_file_write_type pg_rewind_hook_before_file_write = NULL;
+
 /*
  * Currently open target file.
  */
@@ -95,6 +99,13 @@ write_target_range(char *buf, off_t begin, size_t size)
 	if (lseek(dstfd, begin, SEEK_SET) == -1)
 		pg_fatal("could not seek in target file \"%s\": %m",
 				 dstpath);
+
+	// pre progress by extension before write operation
+	if (pg_rewind_hook_before_file_write)
+		buf = pg_rewind_hook_before_file_write(dstpath, buf, size, &(PgRewindHookFileIOContext){
+				.dbid = dbid_target,
+				.start_off = begin
+		});
 
 	writeleft = size;
 	p = buf;
