@@ -2524,26 +2524,14 @@ XLogWrite(XLogwrtRqst WriteRqst, bool flexible)
 			from = XLogCtl->pages + startidx * (Size) XLOG_BLCKSZ;
 			nbytes = npages * (Size) XLOG_BLCKSZ;
 			nleft = nbytes;
-			char *xlog_copy = NULL;
 
-			/* Test for xlog */
-			if (encryption_xlog_write_hook)
-			{
-				// TODO remove this alloc
-				xlog_copy = (char*) palloc(nbytes);
-				memcpy(xlog_copy, from, nbytes);
-
-				(*encryption_xlog_write_hook)(ThisTimeLineID, LogwrtResult.Write, xlog_copy, npages);
-			}
+			from = encryption_xlog_write_hook ? (*encryption_xlog_write_hook)(ThisTimeLineID, startoffset + openLogSegNo * wal_segment_size, from, nbytes) : from;
 
 			do
 			{
 				errno = 0;
 				pgstat_report_wait_start(WAIT_EVENT_WAL_WRITE);
-				if (encryption_xlog_write_hook)
-					written = pg_pwrite(openLogFile, xlog_copy, nleft, startoffset);
-				else
-					written = pg_pwrite(openLogFile, from, nleft, startoffset);
+				written = pg_pwrite(openLogFile, from, nleft, startoffset);
 				pgstat_report_wait_end();
 				if (written <= 0)
 				{
@@ -2560,9 +2548,6 @@ XLogWrite(XLogwrtRqst WriteRqst, bool flexible)
 				from += written;
 				startoffset += written;
 			} while (nleft > 0);
-
-			if (encryption_xlog_write_hook)
-				pfree(xlog_copy);
 
 			npages = 0;
 
@@ -12197,10 +12182,7 @@ retry:
 	pgstat_report_wait_start(WAIT_EVENT_WAL_READ);
 	r = pg_pread(readFile, readBuf, XLOG_BLCKSZ, (off_t) readOff);
 
-	if (encryption_xlog_early_read_hook)
-	{
-		(*encryption_xlog_early_read_hook)(curFileTLI, targetPagePtr, readBuf);
-	}
+	encryption_xlog_early_read_hook ? (*encryption_xlog_early_read_hook)(curFileTLI, targetPagePtr, readBuf, r) : NULL;
 
 	if (r != XLOG_BLCKSZ)
 	{

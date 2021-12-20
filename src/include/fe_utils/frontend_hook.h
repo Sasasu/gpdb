@@ -6,7 +6,8 @@
 
 
 extern char *pg_install_path;
-extern char *pg_data_path;
+extern char *pg_data_source_path;
+extern char *pg_data_dest_path;
 
 extern void add_library_to_load(const char *lib);
 
