@@ -20,6 +20,10 @@
 #include "filemap.h"
 #include "pg_rewind.h"
 
+#include "fe_utils/pg_rewind_hook.h"
+
+pg_rewind_hook_after_file_read_type pg_rewind_hook_after_file_read = NULL;
+
 static void recurse_dir(const char *datadir, const char *path,
 						process_file_callback_t callback);
 
@@ -200,6 +204,13 @@ rewind_copy_file_range(const char *path, off_t begin, off_t end, bool trunc)
 					 srcpath);
 		else if (readlen == 0)
 			pg_fatal("unexpected EOF while reading file \"%s\"", srcpath);
+
+		// post read process by extension
+		if (pg_rewind_hook_after_file_read)
+			pg_rewind_hook_after_file_read(srcpath, buf.data, readlen, &(PgRewindHookFileIOContext){
+					.dbid = 0,
+					.start_off = begin,
+			});
 
 		write_target_range(buf.data, begin, readlen);
 		begin += readlen;

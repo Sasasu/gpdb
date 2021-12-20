@@ -1013,7 +1013,7 @@ main(int argc, char **argv)
 				}
 				break;
 			case 'D':
-				pg_data_path = pg_strdup(optarg);
+				pg_data_source_path = pg_strdup(optarg);
 				break;
 			case 'I':
 				pg_install_path = pg_strdup(optarg);

@@ -22,7 +22,10 @@
 #include "catalog/pg_tablespace_d.h"
 #include "storage/fd.h"
 
+#include "fe_utils/pg_rewind_hook.h"
+
 filemap_t  *filemap = NULL;
+pg_rewind_hook_decide_file_action_type pg_rewind_hook_decide_file_action = NULL;
 
 static bool isRelDataFile(const char *path);
 static char *datasegpath(RelFileNode rnode, ForkNumber forknum,
@@ -759,6 +762,15 @@ decide_file_action(file_entry_t *entry)
 	 */
 	if (strcmp(path, "global/pg_control") == 0)
 		return FILE_ACTION_NONE;
+
+	{ // ask extension what shoud do with this file.
+		typeof(pg_rewind_hook_decide_file_action) f = pg_rewind_hook_decide_file_action;
+
+		file_action_t extension_action = f ? f(entry->path, entry) : FILE_ACTION_UNDECIDED;
+
+		if (extension_action != FILE_ACTION_UNDECIDED)
+			return extension_action;
+	}
 
 	/*
 	 * Remove all files matching the exclusion filters in the target.
