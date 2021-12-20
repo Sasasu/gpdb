@@ -26,6 +26,10 @@
 /* GPDB specific headers */
 #include "cdb/cdbappendonlyxlog.h"
 
+#include "fe_utils/pg_rewind_hook.h"
+
+pg_rewind_hook_after_read_type pg_rewind_hook_after_read;
+
 /*
  * RmgrNames is an array of resource manager names, to make error messages
  * a bit nicer.
@@ -308,8 +312,6 @@ SimpleXLogPageRead(XLogReaderState *xlogreader, XLogRecPtr targetPagePtr,
 		return -1;
 	}
 
-
-	// TODO TDE XLOG read
 	r = read(xlogreadfd, readBuf, XLOG_BLCKSZ);
 	if (r != XLOG_BLCKSZ)
 	{
@@ -321,6 +323,14 @@ SimpleXLogPageRead(XLogReaderState *xlogreader, XLogRecPtr targetPagePtr,
 
 		return -1;
 	}
+
+	if (pg_rewind_hook_after_read != NULL)
+		pg_rewind_hook_after_read(readBuf, XLOG_BLCKSZ, &(PgWaldumpHookAfterReadContext){
+			.pageOffset = targetPageOff,
+			.segSize = WalSegSz,
+			.segno = xlogreadsegno,
+			.timeline = targetHistory[private->tliIndex].tli,
+		});
 
 	Assert(targetSegNo == xlogreadsegno);
 
