@@ -28,6 +28,7 @@
 #include "common/restricted_token.h"
 #include "fe_utils/recovery_gen.h"
 #include "fe_utils/frontend_hook.h"
+#include "fe_utils/pg_rewind_hook.h"
 #include "getopt_long.h"
 #include "common/restricted_token.h"
 #include "utils/palloc.h"
