@@ -193,6 +193,7 @@ rewind_copy_file_range(const char *path, off_t begin, off_t end, bool trunc)
 		else
 			len = end - begin;
 
+		// TODO TDE copy read
 		readlen = read(srcfd, buf.data, len);
 
 		if (readlen < 0)

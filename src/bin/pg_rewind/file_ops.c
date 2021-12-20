@@ -103,6 +103,7 @@ write_target_range(char *buf, off_t begin, size_t size)
 		int			writelen;
 
 		errno = 0;
+		// TODO TDE file write
 		writelen = write(dstfd, p, writeleft);
 		if (writelen < 0)
 		{

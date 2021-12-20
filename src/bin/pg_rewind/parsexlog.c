@@ -309,6 +309,7 @@ SimpleXLogPageRead(XLogReaderState *xlogreader, XLogRecPtr targetPagePtr,
 	}
 
 
+	// TODO TDE XLOG read
 	r = read(xlogreadfd, readBuf, XLOG_BLCKSZ);
 	if (r != XLOG_BLCKSZ)
 	{
