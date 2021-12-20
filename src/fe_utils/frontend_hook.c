@@ -15,8 +15,7 @@
 #define MAXPATHLEN 256                    // in src/port/glob.c
 #define CONFIG_FILENAME "postgresql.conf" // in src/backend/utils/misc/guc.c
 
-char *pg_install_path;
-char *pg_data_path;
+char *pg_install_path, *pg_data_source_path, *pg_data_dest_path;
 static int libraries_num;
 static char **libraries_path;
 
@@ -26,15 +25,15 @@ static int dlhandle_size = 0;
 static char *get_config_file() {
 	struct stat stat_buf;
 
-	if (pg_data_path == NULL ||                 // has configdir
-		lstat(pg_data_path, &stat_buf) != 0 ||  // configdir exist
+	if (pg_data_source_path == NULL ||                 // has configdir
+		lstat(pg_data_source_path, &stat_buf) != 0 ||  // configdir exist
 		(stat_buf.st_mode & S_IFDIR) != S_IFDIR // configdir is a directory
 	) {
 		return NULL;
 	}
 
-	char *fname = malloc(strlen(pg_data_path) + strlen(CONFIG_FILENAME) + 2);
-	sprintf(fname, "%s/%s", pg_data_path, CONFIG_FILENAME);
+	char *fname = malloc(strlen(pg_data_source_path) + strlen(CONFIG_FILENAME) + 2);
+	sprintf(fname, "%s/%s", pg_data_source_path, CONFIG_FILENAME);
 
 	return fname;
 }
@@ -186,16 +185,16 @@ static void pg_find_env_path() {
 	if (pg_install_path == NULL) {
 		pg_install_path = getenv("GPDB_DIR");
 	}
-	if (pg_data_path == NULL) {
-		pg_data_path = getenv("MASTER_DATA_DIRECTORY");
+	if (pg_data_source_path == NULL) {
+		pg_data_source_path = getenv("MASTER_DATA_DIRECTORY");
 	}
-	if (pg_data_path == NULL) {
-		pg_data_path = getenv("COORDINATOR_DATA_DIRECTORY");
+	if (pg_data_source_path == NULL) {
+		pg_data_source_path = getenv("COORDINATOR_DATA_DIRECTORY");
 	}
 
 	// memory leak here, but that is OK
 	pg_install_path = make_absolute_path(pg_install_path);
-	pg_data_path = make_absolute_path(pg_data_path);
+	pg_data_source_path = make_absolute_path(pg_data_source_path);
 }
 
 void frontend_load_libraries(const char *procname) {

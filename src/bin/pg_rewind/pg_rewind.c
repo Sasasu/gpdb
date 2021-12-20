@@ -27,6 +27,7 @@
 #include "common/file_utils.h"
 #include "common/restricted_token.h"
 #include "fe_utils/recovery_gen.h"
+#include "fe_utils/frontend_hook.h"
 #include "getopt_long.h"
 #include "common/restricted_token.h"
 #include "utils/palloc.h"
@@ -89,6 +90,8 @@ usage(const char *progname)
 			 "                                 safely to disk\n"));
 	printf(_("  -P, --progress                 write progress messages\n"));
 	printf(_("      --debug                    write a lot of debug messages\n"));
+	printf(_("      --installdir               the postgresql installdir\n"));
+	printf(_("      --dlopen                   the extension to load\n"));
 	printf(_("  -V, --version                  output version information, then exit\n"));
 	printf(_("  -?, --help                     show this help, then exit\n"));
 	printf(_("\nReport bugs to <pgsql-bugs@lists.postgresql.org>.\n"));
@@ -110,6 +113,8 @@ main(int argc, char **argv)
 		{"no-sync", no_argument, NULL, 'N'},
 		{"progress", no_argument, NULL, 'P'},
 		{"debug", no_argument, NULL, 3},
+		{"installdir", required_argument, NULL, 'I'},
+		{"dlopen", required_argument, NULL, 'E'},
 		{NULL, 0, NULL, 0}
 	};
 	int			option_index;
@@ -182,13 +187,21 @@ main(int argc, char **argv)
 
 			case 'D':			/* -D or --target-pgdata */
 				datadir_target = pg_strdup(optarg);
+				pg_data_dest_path = pg_strdup(optarg);
 				break;
 
 			case 1:				/* --source-pgdata */
 				datadir_source = pg_strdup(optarg);
+				pg_data_source_path = pg_strdup(optarg);
 				break;
 			case 2:				/* --source-server */
 				connstr_source = pg_strdup(optarg);
+				break;
+			case 'I':
+				pg_install_path = pg_strdup(optarg);
+				break;
+			case 'E':
+				add_library_to_load(optarg);
 				break;
 		}
 	}
@@ -258,6 +271,9 @@ main(int argc, char **argv)
 		exit(1);
 	}
 #endif
+
+	// load fronted libraries
+	frontend_load_libraries(progname);
 
 	get_restricted_token();
 
