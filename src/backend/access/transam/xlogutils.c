@@ -1038,9 +1038,7 @@ read_local_xlog_page(XLogReaderState *state, XLogRecPtr targetPagePtr,
 			 XLOG_BLCKSZ);
 
 	if (encryption_xlog_read_hook)
-	{
-		(*encryption_xlog_read_hook)(state->currTLI, targetPagePtr, cur_page);
-	}
+		(*encryption_xlog_read_hook)(state->currTLI, targetPagePtr, cur_page, XLOG_BLCKSZ);
 
 	return count;
 }
