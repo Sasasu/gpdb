@@ -757,6 +757,7 @@ XLogRead(char *buf, int segsize, TimeLineID tli, XLogRecPtr startptr,
 		else
 			segbytes = nbytes;
 
+		elog(LOG, "SASASU read [%d, %d)", startoff, startoff + segbytes);
 		pgstat_report_wait_start(WAIT_EVENT_WAL_READ);
 		readbytes = read(sendFile, p, segbytes);
 		pgstat_report_wait_end();
@@ -1037,8 +1038,10 @@ read_local_xlog_page(XLogReaderState *state, XLogRecPtr targetPagePtr,
 	XLogRead(cur_page, state->wal_segment_size, *pageTLI, targetPagePtr,
 			 XLOG_BLCKSZ);
 
+	elog(LOG, "SASASU read [%ld, %ld)", XLogSegmentOffset(targetPagePtr, wal_segment_size),
+			XLogSegmentOffset(targetRecPtr + XLOG_BLCKSZ, wal_segment_size));
 	if (encryption_xlog_read_hook)
-		(*encryption_xlog_read_hook)(state->currTLI, targetPagePtr, cur_page, XLOG_BLCKSZ);
+		(*encryption_xlog_read_hook)(state->currTLI, targetPagePtr, cur_page, XLOG_BLCKSZ); // SASASU
 
 	return count;
 }

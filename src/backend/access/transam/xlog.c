@@ -2525,8 +2525,10 @@ XLogWrite(XLogwrtRqst WriteRqst, bool flexible)
 			nbytes = npages * (Size) XLOG_BLCKSZ;
 			nleft = nbytes;
 
+			elog(LOG, "SASASU write [%u, %ld)", startoffset, startoffset + nbytes); //	 [491520, 786432)
+			//																			 [753664, 786432)
 			if (encryption_xlog_write_hook)
-				from = (*encryption_xlog_write_hook)(ThisTimeLineID, LogwrtResult.Write, from, nbytes);
+				from = (*encryption_xlog_write_hook)(ThisTimeLineID, startoffset + openLogSegNo * wal_segment_size, from, nbytes); // SASASU
 
 			do
 			{
@@ -12183,8 +12185,9 @@ retry:
 	pgstat_report_wait_start(WAIT_EVENT_WAL_READ);
 	r = pg_pread(readFile, readBuf, XLOG_BLCKSZ, (off_t) readOff);
 
+	elog(LOG, "SASASU read [%d, %d)", readOff, readOff + XLOG_BLCKSZ);
 	if (encryption_xlog_early_read_hook)
-		(*encryption_xlog_early_read_hook)(curFileTLI, targetPagePtr, readBuf, r);
+		(*encryption_xlog_early_read_hook)(curFileTLI, targetPagePtr, readBuf, r); // SASASU
 
 	if (r != XLOG_BLCKSZ)
 	{
