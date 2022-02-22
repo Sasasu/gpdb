@@ -36,6 +36,7 @@
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 
+genfile_after_file_read_type genfile_after_file_read = NULL;
 
 #ifdef WIN32
 
@@ -192,6 +193,9 @@ read_binary_file(const char *filename, int64 seek_offset, int64 bytes_to_read,
 		ereport(ERROR,
 				(errcode_for_file_access(),
 				 errmsg("could not read file \"%s\": %m", filename)));
+
+	if (genfile_after_file_read)
+		genfile_after_file_read(filename, VARDATA(buf), nbytes, seek_offset);
 
 	SET_VARSIZE(buf, nbytes + VARHDRSZ);
 
