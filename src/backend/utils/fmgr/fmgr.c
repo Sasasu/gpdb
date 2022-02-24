@@ -315,10 +315,21 @@ fmgr_info_C_lang(Oid functionId, FmgrInfo *finfo, HeapTuple procedureTuple)
 	bool		isnull;
 	int			i;
 
+	Datum		prosrcattr;
+	char	   *prosrcstring;
+	prosrcattr = SysCacheGetAttr(PROCOID, procedureTuple,
+								 Anum_pg_proc_prosrc, &isnull);
+	if (isnull)
+		elog(ERROR, "null prosrc for C function %u", functionId);
+	prosrcstring = TextDatumGetCString(prosrcattr);
+
 	/*
 	 * See if we have the function address cached already
 	 */
 	hashentry = lookup_C_func(procedureTuple);
+
+	elog(INFO, "lookup %s (id = %d) | find = %s", prosrcstring, functionId, hashentry ? "true" : "false");
+
 	if (hashentry)
 	{
 		user_fn = hashentry->user_fn;
