@@ -3374,9 +3374,9 @@ void
 SetTempNamespaceState(Oid tempNamespaceId, Oid tempToastNamespaceId)
 {
 	/* Worker should not have created its own namespaces ... */
-	Assert(myTempNamespace == InvalidOid);
-	Assert(myTempToastNamespace == InvalidOid);
-	Assert(myTempNamespaceSubID == InvalidSubTransactionId);
+	// Assert(myTempNamespace == InvalidOid);
+	// Assert(myTempToastNamespace == InvalidOid);
+	// Assert(myTempNamespaceSubID == InvalidSubTransactionId);
 
 	/* Assign same namespace OIDs that leader has */
 	myTempNamespace = tempNamespaceId;
