@@ -635,7 +635,7 @@ getTimelineHistory(ControlFileData *controlFile, int *nentries)
 	else
 	{
 		char		path[MAXPGPATH];
-		char	   *histfile;
+		char	   *histfile = NULL;
 
 		TLHistoryFilePath(path, tli);
 
