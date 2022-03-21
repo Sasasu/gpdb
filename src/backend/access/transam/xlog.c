@@ -12389,7 +12389,7 @@ WaitForWALToBecomeAvailable(XLogRecPtr RecPtr, bool randAccess,
 							 */
 							tli = tliOfPointInHistory(tliRecPtr, expectedTLEs);
 
-							if (curFileTLI > 0 && tli < curFileTLI)
+							if (curFileTLI > 0 && tli < curFileTLI) // QQQ
 								elog(ERROR, "according to history file, WAL location %X/%X belongs to timeline %u, but previous recovered WAL file came from timeline %u",
 									 (uint32) (tliRecPtr >> 32),
 									 (uint32) tliRecPtr,
