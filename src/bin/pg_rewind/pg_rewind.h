@@ -43,8 +43,10 @@ extern PGconn *conn;
 extern uint64 fetch_size;
 extern uint64 fetch_done;
 
+#include <signal.h>
+
 /* logging support */
-#define pg_fatal(...) do { pg_log_fatal(__VA_ARGS__); exit(1); } while(0)
+#define pg_fatal(...) do { pg_log_fatal(__VA_ARGS__); raise(SIGABRT); } while(0)
 
 /* in parsexlog.c */
 extern void extractPageMap(const char *datadir, XLogRecPtr startpoint,

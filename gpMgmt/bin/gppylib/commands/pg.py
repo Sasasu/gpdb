@@ -194,13 +194,13 @@ class PgRewind(Command):
         # file exists in target data directory because the target instance can
         # be started up normally as a mirror for WAL replication catch up.
         rewind_cmd = '[ -f %s/standby.signal ] || PGOPTIONS="-c gp_role=utility" $GPHOME/bin/pg_rewind ' \
-                     '--write-recovery-conf --slot="internal_wal_replication_slot" --source-server="%s" ' \
+                     '--debug --write-recovery-conf --slot="internal_wal_replication_slot" --source-server="%s" ' \
                      '--target-pgdata=%s --progress' % (target_datadir, source_server, target_datadir)
 
         # pg_rewind prints progress updates to stdout, but it also prints
         # errors relating to relevant failures(like it will not rewind due to
         # a corrupted pg_control file) to stderr.
-        rewind_cmd = rewind_cmd + " > {} 2>&1".format(pipes.quote(progress_file))
+        rewind_cmd = rewind_cmd + " >> /tmp/rewind.log 2>&1"
         self.cmdStr = rewind_cmd
 
         Command.__init__(self, name, self.cmdStr, LOCAL)
