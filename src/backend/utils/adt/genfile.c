@@ -36,8 +36,7 @@
 #include "utils/timestamp.h"
 #include "utils/datetime.h"
 
-typedef void (*genfile_after_file_read_type) (const char *fname, char *buf, int32 buf_size, size_t offset);
-genfile_after_file_read_type genfile_after_file_read;
+genfile_after_file_read_type genfile_after_file_read = NULL;
 
 #ifdef WIN32
 

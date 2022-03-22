@@ -168,4 +168,7 @@ extern void FileSetIsWorkfile(File file);
 typedef void (*tempfile_unlink_hook_type)(File f);
 extern PGDLLIMPORT tempfile_unlink_hook_type tempfile_unlink_hook;
 
+typedef void (*genfile_after_file_read_type) (const char *fname, char *buf, int32 buf_size, size_t offset);
+extern genfile_after_file_read_type genfile_after_file_read;
+
 #endif							/* FD_H */
