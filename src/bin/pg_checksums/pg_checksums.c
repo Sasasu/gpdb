@@ -192,6 +192,7 @@ scan_file(const char *fn, BlockNumber segmentno)
 	for (blockno = 0;; blockno++)
 	{
 		uint16		csum;
+		// QQQ TODO here
 		int			r = read(f, buf.data, BLCKSZ);
 
 		if (r == 0)
@@ -233,6 +234,7 @@ scan_file(const char *fn, BlockNumber segmentno)
 			}
 
 			/* Write block with checksum */
+			// QQQ TODO here
 			if (write(f, buf.data, BLCKSZ) != BLCKSZ)
 			{
 				pg_log_error("could not update checksum of block %u in file \"%s\": %m",
