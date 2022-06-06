@@ -1165,6 +1165,7 @@ finalize_aggregate(AggState *aggstate,
 			fcinfo->args[0].value = pergroupstate->transValue;
 			fcinfo->args[0].isnull = pergroupstate->transValueIsNull;
 
+			// QQQ only here serialfn
 			*resultVal = FunctionCallInvoke(fcinfo);
 			*resultIsNull = fcinfo->args[0].isnull;
 		}
@@ -2511,6 +2512,7 @@ agg_retrieve_direct(AggState *aggstate)
 					}
 
 					/* Advance the aggregates (or combine functions) */
+					// QQQ exec | Node level
 					advance_aggregates(aggstate);
 
 					/* Reset per-input-tuple context after each tuple */

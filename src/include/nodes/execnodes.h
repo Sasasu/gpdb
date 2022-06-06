@@ -255,6 +255,7 @@ typedef struct ExprContext
 	 * node, or for WindowFunc nodes within a WindowAgg node.
 	 */
 #define FIELDNO_EXPRCONTEXT_AGGVALUES 8
+	// QQQ not parallel, support window function or pre-agg function(?)
 	Datum	   *ecxt_aggvalues; /* precomputed values for aggs/windowfuncs */
 #define FIELDNO_EXPRCONTEXT_AGGNULLS 9
 	bool	   *ecxt_aggnulls;	/* null flags for aggs/windowfuncs */

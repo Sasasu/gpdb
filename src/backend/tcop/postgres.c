@@ -1876,6 +1876,7 @@ exec_simple_query(const char *query_string)
 
 		/*
 		 * Start the portal.  No parameters here.
+		 * TODO QQQ query start
 		 */
 		PortalStart(portal, NULL, 0, InvalidSnapshot, NULL);
 
@@ -1915,6 +1916,7 @@ exec_simple_query(const char *query_string)
 
 		/*
 		 * Run the portal to completion, and then drop it (and the receiver).
+		 * TODO QQQ FETCH_ALL
 		 */
 		(void) PortalRun(portal,
 						 FETCH_ALL,
