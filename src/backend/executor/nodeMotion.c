@@ -370,6 +370,7 @@ execMotionUnsortedReceiver(MotionState *node)
 	/* store it in our result slot and return this. */
 	slot = node->ps.ps_ResultTupleSlot;
 
+	// QQQ save multi tuple to memory
 	slot = ExecStoreMinimalTuple(tuple, slot, true /* shouldFree */ );
 
 #ifdef CDB_MOTION_DEBUG

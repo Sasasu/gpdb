@@ -478,6 +478,7 @@ SendTuple(MotionLayerState *mlStates,
 	MemoryContextSwitchTo(oldCtxt);
 	if (sent > 0)
 	{
+		// QQQ send tuple (put into buffer)
 		putTransportDirectBuffer(transportStates, motNodeID, targetRoute, sent);
 
 		/* fill-in tcList fields to update stats */
@@ -501,7 +502,7 @@ SendTuple(MotionLayerState *mlStates,
 		 tcList.num_chunks);
 #endif
 
-	/* do the send. */
+	/* do the send. */ // QQQ send buffer (will do write(2))
 	if (!SendTupleChunkToAMS(mlStates, transportStates, motNodeID, targetRoute, tcList.p_first))
 	{
 		pMNEntry->stopped = true;
