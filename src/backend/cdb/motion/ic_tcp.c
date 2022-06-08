@@ -368,7 +368,7 @@ readPacket(MotionConn *conn, ChunkTransportState *transportStates)
 		/*
 		 * we read at the end of the buffer, we've eliminated any slack above
 		 */
-		// QQQ motion read UDP packet
+		// QQQ readPacket() motion read UDP packet
 		if ((n = recv(conn->sockfd, conn->pBuff + bytesRead,
 					  Gp_max_packet_size - bytesRead, 0)) < 0)
 		{

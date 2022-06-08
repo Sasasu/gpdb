@@ -652,7 +652,7 @@ struct MinimalTupleData
 
 	bits8		t_bits[FLEXIBLE_ARRAY_MEMBER];	/* bitmap of NULLs */
 
-	// QQQ row format
+	// QQQ MinimalTupleData row format
 	/* MORE DATA FOLLOWS AT END OF STRUCT */
 };
 

@@ -494,7 +494,7 @@ SerializeTuple(TupleTableSlot *slot, SerTupInfo *pSerInfo, struct directTranspor
 
 	AssertState(s_tupSerMemCtxt != NULL);
 
-	// QQQ serialize to buffer
+	// QQQ SerializeTuple() serialize to buffer
 	addByteStringToChunkList(tcList, (char *) &tupbodylen, sizeof(tupbodylen), &pSerInfo->chunkCache);
 	addByteStringToChunkList(tcList, tupbody, tupbodylen, &pSerInfo->chunkCache);
 
