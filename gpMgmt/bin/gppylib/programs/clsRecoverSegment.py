@@ -40,6 +40,7 @@ from gppylib.parseutils import line_reader, check_values, canonicalize_address
 from gppylib.utils import writeLinesToFile, normalizeAndValidateInputPath, TableLogger
 from gppylib.operations.utils import ParallelOperation
 from gppylib.heapchecksum import HeapChecksum
+from gppylib.operations.package import SyncPackages
 from gppylib.mainUtils import ExceptionNoStackTraceNeeded
 from gppylib.programs.clsRecoverSegment_triples import RecoveryTripletsFactory
 
@@ -134,7 +135,16 @@ class GpRecoverSegmentProgram:
     def syncPackages(self, new_hosts):
         # The design decision here is to squash any exceptions resulting from the
         # synchronization of packages. We should *not* disturb the user's attempts to recover.
-        self.logger.warning("Currently, gprecoversegment doesn't support syncing Greenplum Database extensions")
+        try:
+            self.logger.info('Syncing Greenplum Database extensions')
+            operations = [SyncPackages(host) for host in new_hosts]
+            ParallelOperation(operations, self.__options.parallelDegree).run()
+            # introspect outcomes
+            for operation in operations:
+                operation.get_ret()
+        except:
+            self.logger.exception('Syncing of Greenplum Database extensions has failed.')
+            self.logger.warning('Please sync package after successful segment recovery.')
 
     def displayRecovery(self, mirrorBuilder, gpArray):
         self.logger.info('Greenplum instance recovery parameters')
