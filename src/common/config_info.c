@@ -199,6 +199,10 @@ get_configdata(const char *my_exec_path, size_t *configdata_len)
 	configdata[i].setting = pstrdup("PostgreSQL " PG_VERSION);
 	i++;
 
+	configdata[i].name = pstrdup("GP_VERSION");
+	configdata[i].setting = pstrdup("Greenplum " GP_VERSION);
+	i++;
+
 	Assert(i == *configdata_len);
 
 	return configdata;
