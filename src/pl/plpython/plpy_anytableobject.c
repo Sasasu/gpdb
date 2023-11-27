@@ -10,6 +10,7 @@
 
 static PyObject *PLy_anytable_iternext(PyObject *self);
 static PyObject *PLy_anytable_get_column_name(PyObject *self, PyObject *args);
+static PyObject *PLy_anytable_get_batch(PyObject *self, PyObject *args);
 static void PLy_anytable_dealloc(PyObject *arg);
 
 static char PLy_anytable_doc[] = {
@@ -18,6 +19,7 @@ static char PLy_anytable_doc[] = {
 
 static PyMethodDef PLy_anytable_methods[] = {
 	{"get_column_name", PLy_anytable_get_column_name, METH_VARARGS, NULL},
+	{"get_batch", PLy_anytable_get_batch, METH_VARARGS, NULL},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -55,6 +57,31 @@ PLy_anytable_get_column_name(PyObject *self, PyObject *args)
 		PyTuple_SetItem(rettuple, i, PyString_FromString(attrname));
 	}
 
+	return rettuple;
+}
+
+
+static PyObject *
+PLy_anytable_get_batch(PyObject *self, PyObject *args)
+{
+	long retsize = 0, realsize = 0;
+	if (!PyArg_ParseTuple(args, "l", &retsize)) {
+		return NULL;
+	}
+
+	PyObject *rettuple = PyTuple_New(retsize);
+
+	for (; realsize < retsize; realsize++) {
+		PyObject *ret = PLy_anytable_iternext(self);
+
+		if (ret == NULL) {
+			break;
+		}
+
+		PyTuple_SetItem(rettuple, realsize, ret);
+	}
+
+	_PyTuple_Resize(&rettuple, realsize);
 	return rettuple;
 }
 
