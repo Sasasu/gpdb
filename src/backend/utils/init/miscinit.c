@@ -1688,6 +1688,17 @@ process_shared_preload_libraries(void)
 {
 	process_shared_preload_libraries_in_progress = true;
 
+	if ((shared_preload_libraries_string == NULL || strlen(shared_preload_libraries_string) == 0)
+		&& (IsBootstrapProcessingMode() || IsInitProcessingMode()))
+	{
+		/*
+		 * if we are in init or bootstrap mode. postgresql.conf does not exists yet.
+		 * try to load libraries from os environment
+		 */
+		char * const env_preload = getenv("GP_PRELOAD_LIBRARIES");
+		load_libraries(env_preload, "GP_PRELOAD_LIBRARIES", false);
+	}
+
 	load_libraries(shared_preload_libraries_string,
 				   "shared_preload_libraries",
 				   false);

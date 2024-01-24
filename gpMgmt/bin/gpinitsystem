@@ -1182,6 +1182,10 @@ CREATE_QD_DB () {
 
 
 		# build initdb command
+		cmd=""
+		if [ x"$PRELOAD_LIBRARIES" != x"" ]; then
+			cmd="$cmd GP_PRELOAD_LIBRARIES=$PRELOAD_LIBRARIES;"
+		fi
 		cmd="$INITDB"
 		cmd="$cmd -E $ENCODING"
 		cmd="$cmd -D $GP_DIR"
@@ -1888,20 +1892,21 @@ while getopts ":vaqe:c:l:-:p:m:h:n:s:P:S:b:DB:I:O:" opt
 					NAME=${OPTARG%%=*}
 					VAL=${OPTARG#*=}
 					case $NAME in
-						"max_connections" ) COORDINATOR_MAX_CONNECT=$VAL ;;
-						"shared_buffers"  ) NEW_BUFFERS=$VAL ;;
-						"su_password"     ) GP_PASSWD=$VAL ;;
-						"locale"          ) REQ_LOCALE_SETTING=$VAL ;;
-						"lc-collate"      ) LCCOLLATE=$VAL ;;
-						"lc-ctype"        ) LCCTYPE=$VAL ;;
-						"lc-messages"     ) LCMESSAGES=$VAL ;;
-						"lc-monetary"     ) LCMONETARY=$VAL ;;
-						"lc-numeric"      ) LCNUMERIC=$VAL ;;
-						"lc-time"         ) LCTIME=$VAL ;;
-						"mirror-mode"     ) SET_MIRROR_MODE $VAL ;;
-						"standby-datadir" ) STANDBY_DATADIR=$VAL ;;
-						"help"            ) USAGE "print_doc" ;;
-						"version"         ) print_version ;;
+						"max_connections"   ) COORDINATOR_MAX_CONNECT=$VAL ;;
+						"shared_buffers"    ) NEW_BUFFERS=$VAL ;;
+						"su_password"       ) GP_PASSWD=$VAL ;;
+						"locale"            ) REQ_LOCALE_SETTING=$VAL ;;
+						"lc-collate"        ) LCCOLLATE=$VAL ;;
+						"lc-ctype"          ) LCCTYPE=$VAL ;;
+						"lc-messages"       ) LCMESSAGES=$VAL ;;
+						"lc-monetary"       ) LCMONETARY=$VAL ;;
+						"lc-numeric"        ) LCNUMERIC=$VAL ;;
+						"lc-time"           ) LCTIME=$VAL ;;
+						"mirror-mode"       ) SET_MIRROR_MODE $VAL ;;
+						"standby-datadir"   ) STANDBY_DATADIR=$VAL ;;
+						"preload-libraries" ) PRELOAD_LIBRARIES=$VAL ;;
+						"help"              ) USAGE "print_doc" ;;
+						"version"           ) print_version ;;
 						* ) LOG_MSG "[ERROR]:-Unknown option --$NAME" 1; USAGE ;;
 					esac
 

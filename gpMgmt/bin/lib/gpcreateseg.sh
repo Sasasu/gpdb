@@ -93,7 +93,11 @@ CREATE_QES_PRIMARY () {
     LOG_MSG "[INFO][$INST_COUNT]:-Start Function $FUNCNAME"
     LOG_MSG "[INFO][$INST_COUNT]:-Processing segment $GP_HOSTADDRESS"
     # build initdb command
-    cmd="$EXPORT_LIB_PATH;$INITDB"
+    cmd=""
+    if [ x"$PRELOAD_LIBRARIES" != x"" ]; then
+        cmd="$cmd GP_PRELOAD_LIBRARIES=$PRELOAD_LIBRARIES;"
+    fi
+    cmd="$EXPORT_LIB_PATH;$INITDB" # QQQ TODO
     cmd="$cmd -E $ENCODING"
     cmd="$cmd -D $GP_DIR"
     cmd="$cmd --locale=$LOCALE_SETTING"
