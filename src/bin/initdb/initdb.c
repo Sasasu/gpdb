@@ -2655,6 +2655,7 @@ usage(const char *progname)
 	printf(_("\nLess commonly used options:\n"));
 	printf(_("  -d, --debug               generate lots of debugging output\n"));
 	printf(_("  -k, --data-checksums      use data page checksums\n"));
+	printf(_("  --preload_libraries       load libraries, same as shared_preload_libraries in postgresql.conf\n"));
 	printf(_("  -L DIRECTORY              where to find the input files\n"));
 	printf(_("  -n, --no-clean            do not clean up after errors\n"));
 	printf(_("  -N, --no-sync             do not wait for changes to be written safely to disk\n"));
@@ -3346,6 +3347,7 @@ main(int argc, char *argv[])
 		{"data-checksums", no_argument, NULL, 'k'},
 		{"max_connections", required_argument, NULL, 1001},     /*CDB*/
 		{"shared_buffers", required_argument, NULL, 1003},      /*CDB*/
+		{"preload_libraries", required_argument, NULL, 1004},     /*CDB*/
 		{"allow-group-access", no_argument, NULL, 'g'},
 		{NULL, 0, NULL, 0}
 	};
@@ -3489,6 +3491,9 @@ main(int argc, char *argv[])
 				break;
 			case 1003:
 				n_buffers = parse_long(optarg, true, "shared_buffers");
+				break;
+			case 1004:
+				setenv("GP_PRELOAD_LIBRARIES", optarg, true);
 				break;
 			case 12:
 				str_wal_segment_size_mb = pg_strdup(optarg);
