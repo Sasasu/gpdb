@@ -21,7 +21,8 @@ ifeq "$(enable_debug_extensions)" "yes"
                gp_exttable_fdw \
                gp_legacy_string_agg \
                gp_replica_check \
-               gp_toolkit
+               gp_toolkit \
+               data_invert
 else
 	recurse_targets = gp_sparse_vector \
                gp_distribution_policy \
