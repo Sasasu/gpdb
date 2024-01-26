@@ -581,7 +581,7 @@ smgrextend(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		   char *buffer, bool skipFsync)
 {
 	if (file_extend_hook)
-		(*file_extend_hook)(reln, forknum, blocknum, buffer);
+		buffer = (*file_extend_hook)(reln, forknum, blocknum, buffer);
 
 	(*reln->storageManager).smgr_extend(reln, forknum, blocknum,
 										 buffer, skipFsync);
@@ -608,10 +608,10 @@ void
 smgrread(SMgrRelation reln, ForkNumber forknum, BlockNumber blocknum,
 		 char *buffer)
 {
+	(*reln->storageManager).smgr_read(reln, forknum, blocknum, buffer);
+
 	if (file_read_hook)
 		(*file_read_hook)(reln, forknum, blocknum, buffer);
-
-	(*reln->storageManager).smgr_read(reln, forknum, blocknum, buffer);
 }
 
 /*
