@@ -97,7 +97,7 @@ CREATE_QES_PRIMARY () {
     if [ x"$PRELOAD_LIBRARIES" != x"" ]; then
         cmd="$cmd GP_PRELOAD_LIBRARIES=$PRELOAD_LIBRARIES;"
     fi
-    cmd="$EXPORT_LIB_PATH;$INITDB" # QQQ TODO
+    cmd="$EXPORT_LIB_PATH;$INITDB"
     cmd="$cmd -E $ENCODING"
     cmd="$cmd -D $GP_DIR"
     cmd="$cmd --locale=$LOCALE_SETTING"
