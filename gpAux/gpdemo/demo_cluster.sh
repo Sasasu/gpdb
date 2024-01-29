@@ -395,6 +395,8 @@ fi
 
 # Add fsync=off for all gpdemo deployments
 grep -q 'fsync=off' ${CLUSTER_CONFIG_POSTGRES_ADDONS} && echo "fsync=off already exists in ${CLUSTER_CONFIG_POSTGRES_ADDONS}." || echo "fsync=off" >> ${CLUSTER_CONFIG_POSTGRES_ADDONS}
+echo 'shared_preload_libraries=data_invert' >> ${CLUSTER_CONFIG_POSTGRES_ADDONS}
+
 
 echo ""
 echo "======================================================================"
@@ -409,7 +411,7 @@ echo "executing:"
 echo "  $GPPATH/gpinitsystem -a -c $CLUSTER_CONFIG -l $DATADIRS/gpAdminLogs -p ${CLUSTER_CONFIG_POSTGRES_ADDONS} ${STANDBY_INIT_OPTS} \"$@\""
 echo "=========================================================================================="
 echo ""
-$GPPATH/gpinitsystem -a -c $CLUSTER_CONFIG -l $DATADIRS/gpAdminLogs -p ${CLUSTER_CONFIG_POSTGRES_ADDONS} ${STANDBY_INIT_OPTS} "$@"
+$GPPATH/gpinitsystem --preload_libraries=data_invert -a -c $CLUSTER_CONFIG -l $DATADIRS/gpAdminLogs -p ${CLUSTER_CONFIG_POSTGRES_ADDONS} ${STANDBY_INIT_OPTS} "$@"
 RETURN=$?
 
 echo "========================================"
