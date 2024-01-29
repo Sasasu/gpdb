@@ -1,5 +1,3 @@
-PG_CONFIG = pg_config
-
 MODULE_big = data_invert
 OBJS = data_invert.o
 
