@@ -44,6 +44,12 @@ file_extend_hook_invert(SMgrRelation reln, ForkNumber forknum, BlockNumber block
 		buffer = pre_file_extend_hook(reln, forknum, blocknum, buffer);
 	}
 
+	// extend with NULL means only alloc disk
+	if (buffer == NULL)
+	{
+		return buffer;
+	}
+
 	for (int i = 0; i < BLCKSZ; i++)
 	{
 		file_write_hook_buffer[i] = ~((uint8_t)buffer[i]);
