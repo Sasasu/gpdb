@@ -157,7 +157,7 @@ USAGE () {
 		$ECHO "          postgresql.conf file during Greenplum database initialization."
 		$ECHO "      -P, standby_port [optional]"
 		$ECHO "      -s, standby_hostname [optional]"
-		$ECHO "      --preload_libraries [optional], same as shared_preload_libraries in postgresql.conf"
+		$ECHO "      --preload-libraries [optional], same as shared_preload_libraries in postgresql.conf"
 		$ECHO
 		$ECHO "      Return codes:"
 		$ECHO "      0 - No problems encountered with requested operation"
@@ -1189,8 +1189,8 @@ CREATE_QD_DB () {
 		cmd="$cmd $LC_ALL_SETTINGS"
 		cmd="$cmd --max_connections=$COORDINATOR_MAX_CONNECT"
 		cmd="$cmd --shared_buffers=$COORDINATOR_SHARED_BUFFERS"
-		if [ x"$PRELOAD_LIBRARIES" != x"" ]; then
-			cmd="$cmd --preload_libraries=$PRELOAD_LIBRARIES"
+		if [ x"$GP_PRELOAD_LIBRARIES" != x"" ]; then
+			cmd="$cmd --preload-libraries=$GP_PRELOAD_LIBRARIES"
 		fi
 		if [ x"$HEAP_CHECKSUM" == x"on" ]; then
 			cmd="$cmd --data-checksums"
@@ -1377,7 +1377,7 @@ CREATE_SEGMENT () {
 			# SEGMENT_INFO: ~ separated value, ex: host1~port1~data_dir~dbid1~contentid
 			# PAIR_SEGMENT_INFO: corresponding pair, ex: host2~port2~data_dir~dbid2~contentid
 			# INST_COUNT: Number of parallel script count
-			export PRELOAD_LIBRARIES
+			export GP_PRELOAD_LIBRARIES
 			COORDINATOR_HOSTNAME=${COORDINATOR_HOSTNAME} HBA_HOSTNAMES=${HBA_HOSTNAMES} TRUSTED_SHELL=${TRUSTED_SHELL} $GPCREATESEG $FLAG $$ $PREFERRED_ROLE $SEGMENT_INFO "${PAIR_SEGMENT_INFO}" $INST_COUNT  $LOG_FILE $HEAP_CHECKSUM \
 `$ECHO ${COORDINATOR_IP_ADDRESS[@]}|$TR ' ' '~'` \
 `$ECHO ${STANDBY_IP_ADDRESS[@]}|$TR ' ' '~'` &
@@ -1905,7 +1905,7 @@ while getopts ":vaqe:c:l:-:p:m:h:n:s:P:S:b:DB:I:O:" opt
 						"lc-time"           ) LCTIME=$VAL ;;
 						"mirror-mode"       ) SET_MIRROR_MODE $VAL ;;
 						"standby-datadir"   ) STANDBY_DATADIR=$VAL ;;
-						"preload_libraries" ) PRELOAD_LIBRARIES=$VAL ;;
+						"preload-libraries" ) GP_PRELOAD_LIBRARIES=$VAL ;;
 						"help"              ) USAGE "print_doc" ;;
 						"version"           ) print_version ;;
 						* ) LOG_MSG "[ERROR]:-Unknown option --$NAME" 1; USAGE ;;
