@@ -10,9 +10,9 @@
 
 PG_MODULE_MAGIC;
 
-static file_read_hook_type     pre_file_read_hook     = NULL;
-static file_write_hook_type    pre_file_write_hook    = NULL;
-static file_extend_hook_type   pre_file_extend_hook   = NULL;
+static file_read_buffer_modify_hook_type     pre_file_read_hook     = NULL;
+static file_write_buffer_modify_hook_type    pre_file_write_hook    = NULL;
+static file_extend_buffer_modify_hook_type   pre_file_extend_hook   = NULL;
 static ao_file_read_buffer_modify_hook_type  pre_ao_file_read_hook  = NULL;
 static ao_file_write_buffer_modify_hook_type pre_ao_file_write_hook = NULL;
 
@@ -107,18 +107,18 @@ void _PG_init(void);
 void
 _PG_init(void)
 {
-	pre_file_read_hook = file_read_hook;
-	file_read_hook     = file_read_hook_invert;
+	pre_file_read_hook = file_read_buffer_modify_hook;
+	file_read_buffer_modify_hook = file_read_hook_invert;
 
-	pre_file_write_hook = file_write_hook;
-	file_write_hook     = file_write_hook_invert;
+	pre_file_write_hook = file_write_buffer_modify_hook;
+	file_write_buffer_modify_hook = file_write_hook_invert;
 
-	pre_file_extend_hook = file_extend_hook;
-	file_extend_hook     = file_extend_hook_invert;
+	pre_file_extend_hook = file_extend_buffer_modify_hook;
+	file_extend_buffer_modify_hook = file_extend_hook_invert;
 
-	pre_ao_file_read_hook = ao_file_read_hook;
+	pre_ao_file_read_hook = ao_file_read_buffer_modify_hook;
 	ao_file_read_buffer_modify_hook = ao_file_read_hook_invert;
 
-	pre_ao_file_write_hook = ao_file_write_hook;
+	pre_ao_file_write_hook = ao_file_write_buffer_modify_hook;
 	ao_file_write_buffer_modify_hook = ao_file_write_hook_invert;
 }

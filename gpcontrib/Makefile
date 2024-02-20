@@ -22,7 +22,9 @@ ifeq "$(enable_debug_extensions)" "yes"
                gp_legacy_string_agg \
                gp_replica_check \
                gp_toolkit \
-               pg_hint_plan
+               pg_hint_plan \
+               gp_toolkit \
+               data_encryption
 else
 	recurse_targets = gp_sparse_vector \
                gp_distribution_policy \

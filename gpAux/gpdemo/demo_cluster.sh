@@ -396,6 +396,10 @@ fi
 # Add fsync=off for all gpdemo deployments
 grep -q 'fsync=off' ${CLUSTER_CONFIG_POSTGRES_ADDONS} && echo "fsync=off already exists in ${CLUSTER_CONFIG_POSTGRES_ADDONS}." || echo "fsync=off" >> ${CLUSTER_CONFIG_POSTGRES_ADDONS}
 
+if [ ! -z "${GP_PRELOAD_LIBRARIES}" ]; then
+	echo "shared_preload_libraries=${GP_PRELOAD_LIBRARIES}" >> ${CLUSTER_CONFIG_POSTGRES_ADDONS}
+fi
+
 echo ""
 echo "======================================================================"
 echo "CLUSTER_CONFIG_POSTGRES_ADDONS: ${CLUSTER_CONFIG_POSTGRES_ADDONS}"
@@ -404,12 +408,18 @@ cat ${CLUSTER_CONFIG_POSTGRES_ADDONS}
 echo "======================================================================"
 echo ""
 
+INITSYSTEMCMD="$GPPATH/gpinitsystem"
+if [ ! -z "${GP_PRELOAD_LIBRARIES}" ]; then
+	INITSYSTEMCMD="$INITSYSTEMCMD --preload-libraries=$GP_PRELOAD_LIBRARIES"
+fi
+INITSYSTEMCMD="$INITSYSTEMCMD -a -c $CLUSTER_CONFIG -l $DATADIRS/gpAdminLogs -p ${CLUSTER_CONFIG_POSTGRES_ADDONS} ${STANDBY_INIT_OPTS} \"$@\""
+
 echo "=========================================================================================="
 echo "executing:"
-echo "  $GPPATH/gpinitsystem -a -c $CLUSTER_CONFIG -l $DATADIRS/gpAdminLogs -p ${CLUSTER_CONFIG_POSTGRES_ADDONS} ${STANDBY_INIT_OPTS} \"$@\""
+echo "  $INITSYSTEMCMD "
 echo "=========================================================================================="
 echo ""
-$GPPATH/gpinitsystem -a -c $CLUSTER_CONFIG -l $DATADIRS/gpAdminLogs -p ${CLUSTER_CONFIG_POSTGRES_ADDONS} ${STANDBY_INIT_OPTS} "$@"
+$INITSYSTEMCMD
 RETURN=$?
 
 echo "========================================"

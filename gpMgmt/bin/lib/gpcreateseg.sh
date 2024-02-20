@@ -100,8 +100,8 @@ CREATE_QES_PRIMARY () {
     cmd="$cmd $LC_ALL_SETTINGS"
     cmd="$cmd --max_connections=$QE_MAX_CONNECT"
     cmd="$cmd --shared_buffers=$QE_SHARED_BUFFERS"
-    if [ x"$PRELOAD_LIBRARIES" != x"" ]; then
-        cmd="$cmd --preload_libraries=$PRELOAD_LIBRARIES"
+    if [ x"$GP_PRELOAD_LIBRARIES" != x"" ]; then
+        cmd="$cmd --preload-libraries=$GP_PRELOAD_LIBRARIES"
     fi
     if [ x"$HEAP_CHECKSUM" == x"on" ]; then
         cmd="$cmd --data-checksums"
