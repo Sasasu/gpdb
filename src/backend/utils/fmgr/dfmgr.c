@@ -36,6 +36,7 @@
 #include "storage/shmem.h"
 #include "utils/hsearch.h"
 
+
 /* signatures for PostgreSQL-specific library init/fini functions */
 typedef void (*PG_init_t) (void);
 typedef void (*PG_fini_t) (void);
