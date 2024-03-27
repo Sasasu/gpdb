@@ -36,8 +36,6 @@
 #include "storage/shmem.h"
 #include "utils/hsearch.h"
 
-#include "storage/smgr.h" // for file_read_buffer_modify_hook
-
 /* signatures for PostgreSQL-specific library init/fini functions */
 typedef void (*PG_init_t) (void);
 typedef void (*PG_fini_t) (void);
@@ -296,13 +294,6 @@ internal_load_library(const char *libname)
 		else
 			file_tail->next = file_scanner;
 		file_tail = file_scanner;
-	}
-
-	if (file_exists("data_encryption.key") && file_read_buffer_modify_hook == NULL)
-	{
-		ereport(ERROR,
-				(errmsg("this cluster has encryption enabled, but necessary extensions does not loaded"),
-				 errhint("add gp_data_encryption to shared_preload_libraries, in file postgresql.conf")));
 	}
 
 	return file_scanner->handle;

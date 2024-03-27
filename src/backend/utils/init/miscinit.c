@@ -64,6 +64,7 @@
 #include "utils/resource_manager.h"
 #include "utils/resscheduler.h"
 
+#include "storage/smgr.h" // for file_read_buffer_modify_hook
 
 #define DIRECTORY_LOCK_FILE		"postmaster.pid"
 
@@ -1693,6 +1694,18 @@ process_shared_preload_libraries(void)
 				   false);
 
 	process_shared_preload_libraries_in_progress = false;
+
+	{
+		struct stat st;
+
+		if (file_read_buffer_modify_hook == NULL)
+		{
+			int file_exists = (stat("data_encryption.key", &st) ? (errno == ENOENT) : !S_ISDIR(st.st_mode));
+			ereportif(file_exists, ERROR,
+					(errmsg("this cluster has encryption enabled, but necessary extensions does not loaded"),
+					 errhint("add gp_data_encryption to shared_preload_libraries, in file postgresql.conf")));
+		}
+	}
 }
 
 /*
