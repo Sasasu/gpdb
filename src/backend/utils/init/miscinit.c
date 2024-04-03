@@ -1701,6 +1701,7 @@ process_shared_preload_libraries(void)
 		if (file_read_buffer_modify_hook == NULL)
 		{
 			int file_exists = (stat("data_encryption.key", &st) ? (errno == ENOENT) : !S_ISDIR(st.st_mode));
+			errno = 0; // reset errno because we expected errno in stat
 			ereportif(file_exists, ERROR,
 					(errmsg("this cluster has encryption enabled, but necessary extensions is not loaded"),
 					 errhint("add 'gp_data_encryption' to 'shared_preload_libraries', in file 'postgresql.conf'")));
