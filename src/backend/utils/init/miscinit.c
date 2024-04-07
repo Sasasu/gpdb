@@ -1700,7 +1700,7 @@ process_shared_preload_libraries(void)
 
 		if (file_read_buffer_modify_hook == NULL)
 		{
-			int file_exists = (stat("data_encryption.key", &st) ? (errno != ENOENT) : true);
+			int file_exists = stat("data_encryption.key", &st) == 0 || errno != ENOENT;
 			errno = 0; // reset errno because we expected errno in stat
 			if (file_exists)
 			{
