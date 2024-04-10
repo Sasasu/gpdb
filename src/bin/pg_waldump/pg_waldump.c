@@ -24,11 +24,12 @@
 #include "common/logging.h"
 #include "getopt_long.h"
 #include "rmgrdesc.h"
-
+#include "fe_utils/frontend_hook.h"
+#include "fe_utils/pg_waldump_hook.h"
 
 static const char *progname;
-
 static int	WalSegSz;
+pg_waldump_hook_after_read_type pg_waldump_hook_after_read = NULL;
 
 typedef struct XLogDumpPrivate
 {
@@ -197,6 +198,15 @@ search_directory(const char *directory, const char *fname)
 		r = read(fd, buf.data, XLOG_BLCKSZ);
 		if (r == XLOG_BLCKSZ)
 		{
+			if(pg_waldump_hook_after_read != NULL) {
+				PgWaldumpHookAfterReadContext context = {
+					.segSize = DEFAULT_XLOG_SEG_SIZE, // TODO refactor PG code to remove this
+					.pageOffset = 0, // fd just open, read from offset 0
+				};
+				XLogFromFileName(fname, &context.timeline, &context.segno, context.segSize);
+				pg_waldump_hook_after_read(buf.data, XLOG_BLCKSZ, &context);
+			}
+
 			XLogLongPageHeader longhdr = (XLogLongPageHeader) buf.data;
 
 			WalSegSz = longhdr->xlp_seg_size;
@@ -388,6 +398,7 @@ XLogDumpXLogRead(const char *directory, TimeLineID timeline_id,
 		else
 			segbytes = nbytes;
 
+		// TODO segbytes need to align with XLOG_BLCKSZ
 		readbytes = read(sendFile, p, segbytes);
 		if (readbytes <= 0)
 		{
@@ -404,6 +415,16 @@ XLogDumpXLogRead(const char *directory, TimeLineID timeline_id,
 			else if (readbytes == 0)
 				fatal_error("could not read from log file %s, offset %u: read %d of %zu",
 							fname, sendOff, readbytes, (Size) segbytes);
+		}
+
+		if (pg_waldump_hook_after_read != NULL) {
+			PgWaldumpHookAfterReadContext context = {
+				.segSize = WalSegSz,
+				.timeline = timeline_id,
+				.segno = sendSegNo,
+				.pageOffset = startoff,
+			};
+			pg_waldump_hook_after_read(p, segbytes, &context);
 		}
 
 		/* Update state for read */
@@ -815,6 +836,9 @@ usage(void)
 	printf(_("  -x, --xid=XID          only show records with transaction ID XID\n"));
 	printf(_("  -z, --stats[=record]   show statistics instead of records\n"
 			 "                         (optionally, show per-record statistics)\n"));
+	printf(_("      --datadir          the postgresql datadir\n"));
+	printf(_("      --installdir       the postgresql installdir\n"));
+	printf(_("      --dlopen           the extension to load\n"));
 	printf(_("  -?, --help             show this help, then exit\n"));
 	printf(_("\nReport bugs to <pgsql-bugs@lists.postgresql.org>.\n"));
 }
@@ -845,6 +869,9 @@ main(int argc, char **argv)
 		{"xid", required_argument, NULL, 'x'},
 		{"version", no_argument, NULL, 'V'},
 		{"stats", optional_argument, NULL, 'z'},
+		{"datadir", required_argument, NULL, 'D'},
+		{"installdir", required_argument, NULL, 'I'},
+		{"dlopen", required_argument, NULL, 'E'},
 		{NULL, 0, NULL, 0}
 	};
 
@@ -992,6 +1019,15 @@ main(int argc, char **argv)
 					}
 				}
 				break;
+			case 'D':
+				pg_data_path = pg_strdup(optarg);
+				break;
+			case 'I':
+				pg_install_path = pg_strdup(optarg);
+				break;
+			case 'E':
+				add_library_to_load(optarg);
+				break;
 			default:
 				goto bad_argument;
 		}
@@ -1003,6 +1039,9 @@ main(int argc, char **argv)
 					 argv[optind + 2]);
 		goto bad_argument;
 	}
+
+	// load fronted libraries
+	frontend_load_libraries(progname);
 
 	if (private.inpath != NULL)
 	{
