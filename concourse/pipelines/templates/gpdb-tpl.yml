@@ -1046,7 +1046,8 @@ jobs:
     image: gpdb7-[[ os_type ]]-test
     timeout: 24h
     params:
-      SHARED_PRELOAD_LIBRARIES: "data_encryption"
+      GP_DATA_ENCRYPTION_KMS_URI: "123"
+      MAKE_CLUSTER_PRERUN_SHELL_COMMAND: mv /usr/local/greenplum-db-devel/lib/postgresql/data_encryption.so /usr/local/greenplum-db-devel/lib/postgresql/gp_data_encryption.so; mkdir -p /usr/local/greenplum-db-devel/etc/environment.d/; echo 'export GP_DATA_ENCRYPTION_KMS_URI=123' > /usr/local/greenplum-db-devel/etc/environment.d/00-gp_data_encryption.conf
       MAKE_TEST_PRERUN_SHELL_COMMAND: |
         # ao_checksum_corruption will read AO table directly
         # log_directory will use pg_basebackup with is not supported for now
@@ -1058,6 +1059,10 @@ jobs:
         echo "#!/usr/bin/env true" | sudo tee "$COORDINATOR_DATA_DIRECTORY/../../../../../src/bin/pg_upgrade/test_gpdb.sh" ;
         # binary_swap will boot the old gpdb with out TDE support
         echo "#!/usr/bin/env true" | sudo tee "$COORDINATOR_DATA_DIRECTORY/../../../../../src/test/binary_swap/test_binary_swap.sh" ;
+        # those tap test will read or write file directly
+        sudo rm "$COORDINATOR_DATA_DIRECTORY/../../../../../src/bin/pg_basebackup/t/010_pg_basebackup.pl" ;
+        sudo rm "$COORDINATOR_DATA_DIRECTORY/../../../../../src/bin/pg_checksums/t/002_actions.pl" ;
+        sudo rm "$COORDINATOR_DATA_DIRECTORY/../../../../../src/test/recovery/t/016_min_consistency.pl" ;
       MAKE_TEST_COMMAND: -k PGOPTIONS='-c optimizer=off -c jit=off' installcheck-world
       TEST_OS: [[ test_os ]]
       {% if os_type == "rhel8" or os_type == "oel8" or os_type == "rocky8" %}
