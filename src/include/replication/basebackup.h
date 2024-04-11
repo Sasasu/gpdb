@@ -33,7 +33,18 @@ extern void SendBaseBackup(BaseBackupCmd *cmd);
 
 extern int64 sendTablespace(char *path, bool sizeonly);
 
-typedef char* (*basebackup_file_before_verify_hook_type)(char *buf, const char *fname, int blkno, size_t size);
+/*
+ * The hook to modify the read buffer in basebackup
+ *
+ * Arguments:
+ *	fname: the file name, relative path to DataDir
+ *	blkno: the block number, starts from 0 in the current segment
+ *	buf:   the buffer needs to be modified
+ *
+ * Returns the new buffer after modified or the original buffer if no need to modify
+ * The caller does not need to free the new buffer.
+ */
+typedef char* (*basebackup_file_before_verify_hook_type)(const char *fname, int blkno, char *buf);
 extern PGDLLIMPORT basebackup_file_before_verify_hook_type basebackup_file_before_verify_hook;
 
 #endif							/* _BASEBACKUP_H */

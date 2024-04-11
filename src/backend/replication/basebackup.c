@@ -1756,7 +1756,7 @@ sendFile(const char *readfilename, const char *tarfilename, struct stat *statbuf
 			{
 				page = buf + BLCKSZ * i;
 				if (basebackup_file_before_verify_hook)
-					page = basebackup_file_before_verify_hook(page, readfilename, blkno + i, BLCKSZ);
+					page = basebackup_file_before_verify_hook(readfilename, blkno + i, page);
 
 				/*
 				 * Only check pages which have not been modified since the
