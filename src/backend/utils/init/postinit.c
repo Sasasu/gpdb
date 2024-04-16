@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "access/genam.h"
 #include "access/heapam.h"
@@ -619,6 +620,30 @@ BaseInit(void)
 	 * Needed for xlog replay and normal operations.
 	 */
 	TablespaceStorageInit(UnlinkTablespaceDirectory);
+
+	{
+		// try to load TDE.
+		//
+		// TDE looks a normal extension at ./lib/postgresql/gp_data_encryption.so
+		// but actually TDE is not a normal extension.
+		//
+		// TDE does not require to run CREATE EXTENSION. and it need always be loaded after TDE enabled.
+		// some tools may modify shared_preload_libraries, and some extension may not expect we load it early than expect.
+		//
+		// only load TDE at very early for all boot mode.
+		struct stat st;
+		const char *tde_kms_uri = getenv("GP_DATA_ENCRYPTION_KMS_URI");
+		bool tde_kms_uri_not_empty = tde_kms_uri && (strlen(tde_kms_uri) != 0);
+		bool key_file_exists = stat("data_encryption.key", &st) == 0 || errno != ENOENT;
+		errno = 0;
+
+		if (key_file_exists || tde_kms_uri_not_empty)
+		{
+			process_shared_preload_libraries_in_progress = true;
+			load_file("gp_data_encryption.so", false);
+			process_shared_preload_libraries_in_progress = false;
+		}
+	}
 }
 
 /*
