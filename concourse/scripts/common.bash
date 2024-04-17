@@ -164,6 +164,8 @@ function make_cluster() {
     export STATEMENT_MEM=250MB
     pushd gpdb_src/gpAux/gpdemo
 
+    ${MAKE_CLUSTER_PRERUN_SHELL_COMMAND:-true}
+
     su gpadmin -c "source /usr/local/greenplum-db-devel/greenplum_path.sh; LANG=en_US.utf8 make create-demo-cluster WITH_MIRRORS=${WITH_MIRRORS:-true}"
 
     if [[ "$MAKE_TEST_COMMAND" =~ gp_interconnect_type=proxy ]]; then
