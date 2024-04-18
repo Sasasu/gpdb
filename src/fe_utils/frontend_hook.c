@@ -146,19 +146,3 @@ void frontend_load_librarpies(int argc, const char *argv[]) {
 
 	free(procname);
 }
-
-void frontend_unload_all_libraries() {
-	for (int i = 0; i < dlhandle_size; ++i)
-	{
-		void *h = dlhandle[i];
-		if (h != NULL)
-		{
-			void (*f)(void) = dlsym(h, "_PG_fini");
-			if (f != NULL)
-			{
-				f();
-			}
-			dlclose(dlhandle[i]);
-		}
-	}
-}
