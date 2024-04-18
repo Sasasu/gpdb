@@ -25,6 +25,7 @@ typedef struct df_files {
 	char            full_path[FLEXIBLE_ARRAY_MEMBER];
 } DynamicFileList;
 
+/* same as server, do not call dlclose for loaded libraries, check internal_unload_library before version 14 */
 static DynamicFileList *file_list = NULL;
 
 // find which libraries need to load
