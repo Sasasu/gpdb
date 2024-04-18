@@ -16,7 +16,7 @@
 
 #define MAXPATHLEN 256 // in src/port/glob.c
 
-char pg_install_path[MAXPATHLEN] = "\0", pg_data_path[MAXPATHLEN] = "\0";
+char FrontednHookPgInstallPath[MAXPATHLEN] = "\0", FrontendHookPgDataPath[MAXPATHLEN] = "\0";
 
 typedef struct df_files {
 	struct df_files *next;    /* List link */
@@ -105,18 +105,18 @@ static void pg_find_env_path(int argc, const char *argv[]) {
 	}
 
 	char *_data_path = make_absolute_path(data_path);
-	if (_data_path && pg_data_path[0] != '\0')
+	if (_data_path && FrontendHookPgDataPath[0] != '\0')
 	{
-		strncpy(pg_data_path, _data_path, MAXPATHLEN);
+		strncpy(FrontendHookPgDataPath, _data_path, MAXPATHLEN);
 	}
 	free(_data_path);
 
 	char *_install_path = make_absolute_path(install_path);
-	if (_install_path && pg_install_path[0] != '\0')
+	if (_install_path && FrontednHookPgInstallPath[0] != '\0')
 	{
-		strncpy(pg_install_path, _install_path, MAXPATHLEN);
+		strncpy(FrontednHookPgInstallPath, _install_path, MAXPATHLEN);
 	}
-	if (_install_path && pg_install_path[0] != '\0')
+	if (_install_path && FrontednHookPgInstallPath[0] != '\0')
 	{
 		char my_exec_path[MAXPATHLEN];
 		if (find_my_exec(argv[0], my_exec_path) == 0)
@@ -127,7 +127,7 @@ static void pg_find_env_path(int argc, const char *argv[]) {
 				*lastsep = '\0';
 			}
 			cleanup_path(my_exec_path);
-			strncpy(pg_install_path, my_exec_path, MAXPATHLEN);
+			strncpy(FrontednHookPgInstallPath, my_exec_path, MAXPATHLEN);
 		}
 	}
 	free(_install_path);
@@ -146,18 +146,18 @@ void frontend_load_librarpies(int argc, const char *argv[]) {
 
 		const char *tde_kms_uri = getenv("GP_DATA_ENCRYPTION_KMS_URI");
 		int tde_kms_uri_not_empty = tde_kms_uri && (strlen(tde_kms_uri) != 0);
-		snprintf(path, MAXPATHLEN, "%s/data_encryption.key", pg_data_path);
+		snprintf(path, MAXPATHLEN, "%s/data_encryption.key", FrontendHookPgDataPath);
 		int key_file_exists = stat("data_encryption.key", &st) == 0 || errno != ENOENT;
 		errno = 0;
 
-		if (pg_install_path[0] == '\0')
+		if (FrontednHookPgInstallPath[0] == '\0')
 		{
 			printf("failed to find TDE library: pg_install_path is empty.\n");
 		}
 
 		if (key_file_exists || tde_kms_uri_not_empty)
 		{
-			sprintf(path, "%s/lib/postgresql/%s-%s.so", pg_install_path, tde_lib_file, procname);
+			sprintf(path, "%s/lib/postgresql/%s-%s.so", FrontednHookPgInstallPath, tde_lib_file, procname);
 			fronted_load_library(path);
 		}
 	}
