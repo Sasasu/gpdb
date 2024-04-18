@@ -64,7 +64,7 @@ static void fronted_load_library(const char *full_path) {
 	return;
 }
 
-static void pg_find_env_path() {
+static void pg_find_env_path(int argc, const char *argv[]) {
 	char *install_path = NULL, *data_path = NULL;
 
 	if (install_path == NULL)
@@ -98,12 +98,28 @@ static void pg_find_env_path() {
 		strncpy(pg_data_path, _data_path, MAXPATHLEN);
 		free(_data_path);
 	}
+
+	if (_install_path == NULL)
+	{
+		char my_exec_path[MAXPATHLEN];
+		if (find_my_exec(argv[0], my_exec_path) == 0)
+		{
+			char *lastsep = strrchr(my_exec_path, '/');
+			if (lastsep)
+			{
+				*lastsep = '\0';
+			}
+			cleanup_path(my_exec_path);
+			strncpy(pg_install_path, my_exec_path, MAXPATHLEN);
+		}
+	}
 }
 
-void frontend_load_libraries(const char *procname) {
+void frontend_load_librarpies(int argc, const char *argv[]) {
 	char path[MAXPATHLEN] = {};
+	char *procname = get_progname(argv[0]);
 
-	pg_find_env_path();
+	pg_find_env_path(argc, argv);
 
 	{
 		// try to load TDE. check src/backend/utils/init/postinit.c
@@ -127,6 +143,8 @@ void frontend_load_libraries(const char *procname) {
 			fronted_load_library(path);
 		}
 	}
+
+	free(procname);
 }
 
 void frontend_unload_all_libraries() {
