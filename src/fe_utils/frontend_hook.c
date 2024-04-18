@@ -5,61 +5,80 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include <dlfcn.h>    // for dlopen()
 #include <sys/stat.h> // for stat()
 
 #include "c.h"
 #include "port.h"
+#include "pg_config.h"
 
 #define MAXPATHLEN 256 // in src/port/glob.c
 
 char pg_install_path[MAXPATHLEN] = "\0", pg_data_path[MAXPATHLEN] = "\0";
 
-static void *dlhandle[128] = {0};
-static int dlhandle_size = 0;
+typedef struct df_files {
+	struct df_files *next;    /* List link */
+	void            *handle;  /* a handle for pg_dl* functions */
+	struct stat     fileinfo; /* device id and inode */
+	char            full_path[FLEXIBLE_ARRAY_MEMBER];
+} DynamicFileList;
+
+static DynamicFileList *file_list = NULL;
 
 // find which libraries need to load
 static void fronted_load_library(const char *full_path) {
-	struct stat stat_buf;
-	if (lstat(full_path, &stat_buf) != 0)
+	DynamicFileList *file_scanner;
+
+	/*
+	 * Scan the list of loaded FILES to see if the file has been loaded.
+	 */
+	for (file_scanner = file_list;
+		file_scanner != NULL &&
+		strcmp(full_path, file_scanner->full_path) != 0;
+		file_scanner = file_scanner->next)
 	{
-		printf("lstat: %s\n", strerror(errno));
-		exit(-1);
 	}
 
-	void *h = dlopen(full_path, RTLD_NOW | RTLD_GLOBAL);
-	if (h == NULL)
+	if (file_scanner == NULL)
 	{
-		char *error = dlerror();
-		printf("dlopen: %s\n", error);
-		exit(-1);
-	}
-
-	if (dlhandle_size >= 127)
-	{
-		printf("too many libraries to load");
-		exit(-1);
-	}
-
-	for (int i = 0; i < dlhandle_size; ++i)
-	{
-		if (dlhandle[i] == h)
+		/*
+		 * File does not loaded yet.
+		 */
+		struct stat stat_buf;
+		if (lstat(full_path, &stat_buf) != 0)
 		{
-			return; // dll loaded, pass
+			printf("lstat: %s\n", strerror(errno));
+			exit(-1);
 		}
+
+		void *h = dlopen(full_path, RTLD_NOW | RTLD_GLOBAL);
+		if (h == NULL)
+		{
+			char *error = dlerror();
+			printf("dlopen: %s\n", error);
+			exit(-1);
+		}
+
+		void (*f)(void) = dlsym(h, "_PG_init");
+		if (f == NULL)
+		{
+			printf("dlopen: can not find _PG_init() in %s\n", full_path);
+			dlclose(h);
+			exit(-1);
+		}
+
+		(void)f();
+
+		DynamicFileList *current = malloc(sizeof(DynamicFileList) + strlen(full_path));
+		current->next = file_list;
+		current->handle = h;
+		current->fileinfo = stat_buf;
+		strncpy(current->full_path, full_path, strlen(full_path));
+
+		file_list = current;
 	}
-
-	dlhandle[dlhandle_size++] = h;
-
-	void (*f)(void) = dlsym(h, "_PG_init");
-	if (f == NULL)
-	{
-		printf("dlopen: can not find _PG_init() in %s\n", full_path);
-		exit(-1);
-	}
-
-	f();
 
 	return;
 }
@@ -84,22 +103,19 @@ static void pg_find_env_path(int argc, const char *argv[]) {
 		data_path = getenv("PGDATA");
 	}
 
-	char *_install_path = make_absolute_path(install_path);
 	char *_data_path = make_absolute_path(data_path);
-
-	if (_install_path)
-	{
-		strncpy(pg_install_path, _install_path, MAXPATHLEN);
-		free(_install_path);
-	}
-
-	if (_data_path)
+	if (_data_path && pg_data_path[0] != '\0')
 	{
 		strncpy(pg_data_path, _data_path, MAXPATHLEN);
-		free(_data_path);
 	}
+	free(_data_path);
 
-	if (_install_path == NULL)
+	char *_install_path = make_absolute_path(install_path);
+	if (_install_path && pg_install_path[0] != '\0')
+	{
+		strncpy(pg_install_path, _install_path, MAXPATHLEN);
+	}
+	if (_install_path && pg_install_path[0] != '\0')
 	{
 		char my_exec_path[MAXPATHLEN];
 		if (find_my_exec(argv[0], my_exec_path) == 0)
@@ -113,6 +129,7 @@ static void pg_find_env_path(int argc, const char *argv[]) {
 			strncpy(pg_install_path, my_exec_path, MAXPATHLEN);
 		}
 	}
+	free(_install_path);
 }
 
 void frontend_load_librarpies(int argc, const char *argv[]) {
