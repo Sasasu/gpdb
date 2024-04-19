@@ -45,7 +45,7 @@ static void fronted_load_library(const char *full_path) {
 	if (file_scanner == NULL)
 	{
 		/*
-		 * File does not loaded yet.
+		 * File has not been loaded yet.
 		 */
 		struct stat stat_buf;
 		if (lstat(full_path, &stat_buf) != 0)
@@ -72,7 +72,7 @@ static void fronted_load_library(const char *full_path) {
 
 		(void)f();
 
-		DynamicFileList *current = malloc(sizeof(DynamicFileList) + strlen(full_path));
+		DynamicFileList *current = malloc(sizeof(DynamicFileList) + strlen(full_path) + 1);
 		current->next = file_list;
 		current->handle = h;
 		current->fileinfo = stat_buf;
