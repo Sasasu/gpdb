@@ -15,12 +15,15 @@ subdir = src/bin/pg_checksums
 top_builddir = ../../..
 include $(top_builddir)/src/Makefile.global
 
-OBJS= pg_checksums.o $(WIN32RES)
+OBJS= pg_checksums.o $(WIN32RES) frontend_hook.o
 
 all: pg_checksums
 
 pg_checksums: $(OBJS) | submake-libpgport
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LDFLAGS_EX) $(LIBS) -o $@$(X)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LDFLAGS_EX) $(LIBS) -o $@$(X) -Wl,--dynamic-list=hooks.txt
+
+frontend_hook.c: % : $(top_srcdir)/src/fe_utils/%
+	rm -f $@ && $(LN_S) $< .
 
 install: all installdirs
 	$(INSTALL_PROGRAM) pg_checksums$(X) '$(DESTDIR)$(bindir)/pg_checksums$(X)'

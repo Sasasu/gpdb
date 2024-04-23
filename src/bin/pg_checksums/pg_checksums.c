@@ -30,6 +30,11 @@
 #include "storage/checksum.h"
 #include "storage/checksum_impl.h"
 
+#include "fe_utils/frontend_hook.h"
+#include "fe_utils/pg_checksums_hook.h"
+
+pg_checksums_hook_after_read_type pg_checksums_hook_after_read = NULL;
+pg_checksums_hook_before_write_type pg_checksums_hook_before_write = NULL;
 
 static int64 files = 0;
 static int64 blocks = 0;
@@ -85,6 +90,8 @@ usage(void)
 	printf(_("  -P, --progress           show progress information\n"));
 	printf(_("  -v, --verbose            output verbose messages\n"));
 	printf(_("  -V, --version            output version information, then exit\n"));
+	printf(_("      --installdir         the postgresql installdir\n"));
+	printf(_("      --dlopen             the extension to load\n"));
 	printf(_("  -?, --help               show this help, then exit\n"));
 	printf(_("\nIf no data directory (DATADIR) is specified, "
 			 "the environment variable PGDATA\nis used.\n\n"));
@@ -214,6 +221,9 @@ scan_file(const char *fn, BlockNumber segmentno)
 		uint16		csum;
 		int			r = read(f, buf.data, BLCKSZ);
 
+		if (pg_checksums_hook_after_read)
+			pg_checksums_hook_after_read(fn, blockno*BLCKSZ, buf.data);
+
 		if (r == 0)
 			break;
 		if (r != BLCKSZ)
@@ -264,6 +274,10 @@ scan_file(const char *fn, BlockNumber segmentno)
 				pg_log_error("seek failed for block %u in file \"%s\": %m", blockno, fn);
 				exit(1);
 			}
+
+
+			if (pg_checksums_hook_before_write)
+				pg_checksums_hook_before_write(fn, blockno*BLCKSZ, buf.data);
 
 			/* Write block with checksum */
 			w = write(f, buf.data, BLCKSZ);
@@ -458,6 +472,8 @@ main(int argc, char *argv[])
 		{"no-sync", no_argument, NULL, 'N'},
 		{"progress", no_argument, NULL, 'P'},
 		{"verbose", no_argument, NULL, 'v'},
+		{"installdir", required_argument, NULL, 'I'},
+		{"dlopen", required_argument, NULL, 'E'},
 		{NULL, 0, NULL, 0}
 	};
 
@@ -513,15 +529,24 @@ main(int argc, char *argv[])
 				break;
 			case 'D':
 				DataDir = optarg;
+				strcpy(FrontendHookPgDataPath, optarg);
 				break;
 			case 'P':
 				showprogress = true;
+				break;
+			case 'I':
+				strcpy(FrontednHookPgInstallPath, optarg);
+				break;
+			case 'E':
+				frontend_load_library(optarg);
 				break;
 			default:
 				fprintf(stderr, _("Try \"%s --help\" for more information.\n"), progname);
 				exit(1);
 		}
 	}
+
+	frontend_load_librarpies(argc, (const char**)argv);
 
 	if (DataDir == NULL)
 	{
@@ -537,6 +562,8 @@ main(int argc, char *argv[])
 			fprintf(stderr, _("Try \"%s --help\" for more information.\n"), progname);
 			exit(1);
 		}
+
+		strcpy(FrontendHookPgDataPath, DataDir);
 	}
 
 	/* Complain if any arguments remain */
