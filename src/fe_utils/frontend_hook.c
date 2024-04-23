@@ -73,6 +73,7 @@ static void fronted_load_library(const char *full_path) {
 		(void)f();
 
 		DynamicFileList *current = malloc(sizeof(DynamicFileList) + strlen(full_path) + 1);
+		memset(current, 0, sizeof(DynamicFileList) + strlen(full_path) + 1);
 		current->next = file_list;
 		current->handle = h;
 		current->fileinfo = stat_buf;
