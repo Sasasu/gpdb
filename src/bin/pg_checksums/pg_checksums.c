@@ -529,7 +529,7 @@ main(int argc, char *argv[])
 				break;
 			case 'D':
 				DataDir = optarg;
-				strncpy(FrontendHookPgDataPath, optarg, MAX_ARG_STRLEN);
+				strlcpy(FrontendHookPgDataPath, optarg, MAXPGPATH);
 				break;
 			case 'P':
 				showprogress = true;
