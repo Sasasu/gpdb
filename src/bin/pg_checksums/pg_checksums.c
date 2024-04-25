@@ -535,7 +535,7 @@ main(int argc, char *argv[])
 				showprogress = true;
 				break;
 			case 'I':
-				strcpy(FrontednHookPgInstallPath, optarg);
+				strlcpy(FrontednHookPgInstallPath, optarg, MAXPGPATH);
 				break;
 			case 'E':
 				frontend_load_library(optarg);
@@ -563,7 +563,7 @@ main(int argc, char *argv[])
 			exit(1);
 		}
 
-		strcpy(FrontendHookPgDataPath, DataDir);
+		strlcpy(FrontendHookPgDataPath, DataDir, MAXPGPATH);
 	}
 
 	/* Complain if any arguments remain */
