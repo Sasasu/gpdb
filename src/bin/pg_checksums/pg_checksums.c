@@ -90,8 +90,6 @@ usage(void)
 	printf(_("  -P, --progress           show progress information\n"));
 	printf(_("  -v, --verbose            output verbose messages\n"));
 	printf(_("  -V, --version            output version information, then exit\n"));
-	printf(_("      --installdir         the postgresql installdir\n"));
-	printf(_("      --dlopen             the extension to load\n"));
 	printf(_("  -?, --help               show this help, then exit\n"));
 	printf(_("\nIf no data directory (DATADIR) is specified, "
 			 "the environment variable PGDATA\nis used.\n\n"));
@@ -472,8 +470,6 @@ main(int argc, char *argv[])
 		{"no-sync", no_argument, NULL, 'N'},
 		{"progress", no_argument, NULL, 'P'},
 		{"verbose", no_argument, NULL, 'v'},
-		{"installdir", required_argument, NULL, 'I'},
-		{"dlopen", required_argument, NULL, 'E'},
 		{NULL, 0, NULL, 0}
 	};
 
@@ -533,12 +529,6 @@ main(int argc, char *argv[])
 				break;
 			case 'P':
 				showprogress = true;
-				break;
-			case 'I':
-				strlcpy(FrontednHookPgInstallPath, optarg, MAXPGPATH);
-				break;
-			case 'E':
-				frontend_load_library(optarg);
 				break;
 			default:
 				fprintf(stderr, _("Try \"%s --help\" for more information.\n"), progname);
